@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, BadgeCheck, Banknote, FlaskConical, LayoutDashboard, Scale, Search, ShieldAlert, Target, TrendingUp } from "lucide-react";
+import { ArrowRight, BadgeCheck, Banknote, BrainCircuit, FlaskConical, LayoutDashboard, Scale, Search, ShieldAlert, Target, Telescope, TrendingUp, UserCheck } from "lucide-react";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { brl, int, pct } from "@/lib/format";
@@ -55,6 +55,24 @@ export default function Overview() {
               </Link>
             ))}
           </div>
+
+          <Card>
+            <h2 className="flex items-center gap-2 font-medium"><BrainCircuit className="size-4 text-accent" aria-hidden /> Onde a IA entrou</h2>
+            <ol className="mt-4 grid gap-4 md:grid-cols-3">
+              <li className="flex gap-3">
+                <IconChip icon={Telescope} size="sm" />
+                <p className="text-sm"><span className="font-medium">Descoberta.</span> <span className="text-muted">Agentes de IA analisaram o banco em paralelo (movimentação da conta, bureau, armadilhas dos dados e economia da política) e levantaram os padrões e os pontos de corte. Este painel mostra esses padrões conferidos no histórico.</span></p>
+              </li>
+              <li className="flex gap-3">
+                <IconChip icon={BrainCircuit} size="sm" />
+                <p className="text-sm"><span className="font-medium">Decisão.</span> <span className="text-muted">Um modelo de IA aprendeu com {int(data.historical_mature_total)} contratos a chance de calote de cada pedido e decide o passo de risco da política. Em pedidos que nunca viu, separa bons e maus pagadores com nota {data.model.auc.toFixed(2).replace(".", ",")}, contra {data.model.auc_current_rule.toFixed(2).replace(".", ",")} do score do bureau (0,5 é sorteio).</span></p>
+              </li>
+              <li className="flex gap-3">
+                <IconChip icon={UserCheck} size="sm" tone="gold" />
+                <p className="text-sm"><span className="font-medium">Controle humano.</span> <span className="text-muted">A IA sugere e o analista decide: a política só entra em vigor depois de testada e aprovada no Laboratório, com versão e nome de quem aprovou.</span></p>
+              </li>
+            </ol>
+          </Card>
 
           {data.counteroffers != null && data.counteroffers > 0 && (
             <Card className="border-dashed border-extra/40 bg-extra-soft/40">
