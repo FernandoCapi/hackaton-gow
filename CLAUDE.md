@@ -11,7 +11,8 @@ banco PostgreSQL e a IA precisa encontrar padrões nos dados e apoiar uma decis�
 - **Decisão:** para cada um dos 2.000 pedidos novos, aprovar ou negar e com qual valor
   (≤ solicitado, ≤ R$ 30 mil, ≥ R$ 500). A IA sugere, o analista de risco decide.
 - **Referência:** política atual — score > 600, renda > R$ 2.000, 0 restrições, parcela
-  (Price, 3% a.m.) ≤ 30% da renda; acima disso reduz o valor ao que cabe.
+  (Price, 3% a.m.) ≤ 30% da renda; acima disso nega (confirmado pela Fortuna). No histórico o
+  valor aparece cortado; `current_policy(..., reduce_amount=True)` reproduz isso só para conferência.
 - **Métrica (40%):** por aprovado, +15% do valor se paga em dia, +5% com atraso, −60% se não
   paga; ganho = nosso resultado − política atual. Sem atraso, só compensa aprovar com
   chance de calote < 20%. O desfecho piora quando o valor aprovado é alto demais.

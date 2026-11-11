@@ -131,13 +131,19 @@ SPECS: list[Spec] = [
          STEP_RISK, lambda f: f.parcela_sobre_folga > 0.45,
          note="Medido no valor pedido. É o sinal mais forte do modelo de risco."),
     Spec("amount_cut_by_30pct_rule", "risk", "historico_maduro",
-         "pedido acima da capacidade, aprovado com valor cortado pela regra dos 30%",
+         "pedido com parcela acima de 30% da renda (no histórico, aprovado com o valor cortado)",
          lambda f: f.cortado,
          [("valor cortado", lambda f: f.cortado), ("valor pedido", lambda f: ~f.cortado)],
          STEP_CAPACITY,
-         lambda f: f.current_decision.eq("APROVADO") & (f.current_amount < f.valor_solicitado - 0.005),
-         note="Cortar não resolve: o corte deixa a parcela em exatos 30% da renda. Pedir acima da "
-              "capacidade já é sinal de aperto."),
+         # new orders that pass the rest of the current rule but ask for more than 30% of income
+         lambda f: f.current_eligible & (f.pedido_acima_30 == 1),
+         sentence=lambda spec, s: (
+             f"No histórico, pedidos com parcela acima de 30% da renda foram aprovados com o valor cortado e "
+             f"deram {pct(s['rate'])} de calote, contra {pct(s['base_rate'])} da média. "
+             f"Afeta {num(s['n'])} clientes."
+         ),
+         note="A regra da Fortuna hoje nega esses pedidos, e a nossa política também: cortar não resolveu, "
+              "porque deixa a parcela em exatos 30% da renda, e pedir acima da capacidade já é sinal de aperto."),
     Spec("total_debt_burden", "risk", "historico_maduro",
          "nossa parcela somada às dívidas em outras instituições acima de 44% da renda",
          lambda f: f.comprometimento_total > 0.44,

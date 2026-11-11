@@ -25,6 +25,9 @@ dados, time). Alimenta a "defesa das escolhas" e o "que mudou depois do checkpoi
 | 11/11 | **Prazo de 36 meses é padrão real**, não armadilha (corrige `docs/padroes.md`) | Com a mesma parcela (até 20% da renda): 5,9% de calote em 36 meses × 13,5% em até 12 meses | Dados |
 | 11/11 | "Parcela entre 25% e 30% da renda" **fora** da lista de padrões | Medida sobre a renda efetiva, dá 10,6% (66 contratos), sem salto; o salto só aparece acima de 30%, nos valores cortados (56%) | Dados |
 | 11/11 | Arquivo de decisões validado pela organização: 2.000 de 2.000 pedidos com decisão, 0 problemas, 1.232 aprovados e 768 negados (gerado por `python -m src.decide` com os parâmetros padrão) | Garante o formato antes do checkpoint; o envio final precisa se chamar exatamente `selic_final.csv` | Organização (validação) |
+| 11/11 tarde | **Régua de comparação: a regra atual nega** quando a parcela do pedido passa de 30% da renda (antes o motor cortava o valor, como no histórico). Números corrigidos: ganho no histórico R$ 416.658 (era R$ 1,11 mi), ganho estimado nos novos R$ 263.552 (era R$ 481 mil), aprovados pela regra atual nos novos 1.084 (era 1.145) | A Fortuna confirmou que a regra é "sim ou não" (resposta 3). Nenhuma decisão nossa muda: dos 61 pedidos novos que a regra cortaria, não aprovamos nenhum; o CSV é idêntico. A diferença no histórico são os 177 contratos cortados, com 55,9% de calote | Cliente (resposta 3) |
+| 11/11 tarde | De onde vem o ganho nos novos: aprovamos 290 que a regra nega (+R$ 117 mil, risco médio 7,8%) e negamos 142 que ela aprova (evita R$ 146 mil, risco médio 32,4%); 942 as duas aprovam. Aprovação 1.084 (54,2%) → 1.232; calote esperado da carteira 11,3% → 7,5% (ponderado pelo valor) | "Aprovamos mais e com menos calote": metade do ganho de cada lado | Dados (conferido com o Davi) |
+| 11/11 tarde | Padrão "valor cortado" descreve o que aconteceu no histórico, não a regra | A Fortuna diz que a regra nega, mas no histórico ela cortou; o padrão mostra que negar, como a Fortuna define e como a nossa política faz, é o certo | Time |
 
 ## Perguntas para o cliente (janela de dúvidas)
 
@@ -37,4 +40,17 @@ dados, time). Alimenta a "defesa das escolhas" e o "que mudou depois do checkpoi
 
 ## Respostas do cliente
 
-_(registrar aqui, com horário)_
+Perguntas enviadas à Gabi (Fortuna) na tarde de 11/11, numeradas como na mensagem.
+
+| # | Pergunta | Resposta | O que fizemos |
+|---|---|---|---|
+| 1 | O desfecho muda se aprovarmos um valor menor? | Não sabe; "vocês decidem" | Decisão nossa: **valor pedido ou nega**. No histórico, cortar deu 56% de calote; redução profunda não tem dados. A opção de reduzir fica no laboratório |
+| 2 | Se sim, o efeito vem da parcela sobre a renda? | Não entendeu | Explicamos o contexto; coberta pela 1 |
+| 3 | A regra atual corta o valor ou nega? | **Nega**: "hoje é sim ou não" | Régua de comparação corrigida (ver decisões acima) |
+| 4 | O limite de 30% inclui dívidas em outras instituições? | Só a parcela da Fortuna | Confirma o motor |
+| 5 | O desfecho dos novos considera o contrato inteiro? | Respondida em parte: pedidos de outubro não têm pagamento; no histórico há contratos fechados e em aberto | Mantido o **contrato inteiro**: o manual (7.2) fala em "se o cliente pagaria em dia, com atraso ou não pagaria", e o risco é assimétrico (o ganho quase não muda entre cortes de 12% e 17%; soltar o corte e errar custaria 60% do valor por calote). Não perguntamos de novo |
+| 6 | "Não pagou" = 90+ dias sem pagar? | Sim, mesma regra | Confirma o alvo do modelo |
+| 7 | Há restrição de negócio (aprovação mínima, inadimplência máxima)? | "O que vocês sugerem?" | A responder. Sugestão: o analista confere dois limites antes de aprovar uma versão: inadimplência esperada ≤ histórica (13,7%) e aprovação ≥ a da regra atual. Hoje: regra atual aprova 1.084 (54,2%) com 11,3% de calote esperado; a nossa, 1.232 com 7,5% |
+| 8 | O bureau da API reflete a data do pedido? | Não entenderam | Desconsiderada; nos dados, os perfis de bureau de novos e históricos são iguais |
+| 9 | "Pagou com atraso" vale para qualquer atraso? | Sim; calote é 90+ dias | Confirma a pontuação (+15% / +5% / −60%) |
+| 10 | O piloto foi sorteado? | Sem resposta | Nos dados se comporta como sorteado (auditoria): usamos como evidência nossa |

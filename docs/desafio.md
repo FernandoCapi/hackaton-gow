@@ -17,9 +17,10 @@ A IA sugere e o analista de risco decide: nenhuma política vai para produção 
 3. Sem restrições ativas no bureau.
 4. Parcela de até 30% da renda declarada.
 
-Conferido nos dados: os 4 primeiros critérios decidem aprova/nega sem exceção nos pedidos da
-política atual; quando a parcela do valor pedido passa de 30% da renda, o valor aprovado é
-reduzido ao máximo que cabe nos 30%.
+**Hoje a regra é "sim ou não"** (confirmado pela Fortuna): se a parcela do valor pedido passa de
+30% da renda declarada, o pedido é negado. É essa regra que usamos como referência em todas as
+comparações. No histórico, os 3 primeiros critérios decidem aprova/nega sem exceção, mas quando a
+parcela passava de 30% o valor aparece cortado até caber (177 contratos maduros, 56% de calote).
 
 Houve um **piloto** de 6 meses (out/2025 a mar/2026) com critérios mais flexíveis: o histórico
 tem aprovados que a política atual negaria.

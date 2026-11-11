@@ -206,7 +206,7 @@ class Engine:
 def main():
     engine = Engine()
     hist = engine.hist_grid.orders
-    check = current_policy(hist).join(hist[["decisao", "valor_aprovado", "politica_aplicada"]])
+    check = current_policy(hist, reduce_amount=True).join(hist[["decisao", "valor_aprovado", "politica_aplicada"]])
     atual = check[check.politica_aplicada == "atual"]
     print(f"politica atual reproduzida: {(atual.current_decision.str.lower() == atual.decisao).mean():.1%} "
           f"das decisoes, valor dif. max R$ {(atual.current_amount - atual.valor_aprovado).abs().max():.2f}")
