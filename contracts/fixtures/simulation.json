@@ -1,0 +1,32 @@
+{
+  "params": {
+    "max_restrictions": 0,
+    "risk_cutoff": 0.2,
+    "safety_margin": 0.0,
+    "amount_rule": "maximize_expected_profit",
+    "min_amount": 500.0
+  },
+  "historical": {
+    "current_result": 512340.0,
+    "proposed_result": 701220.0,
+    "gain": 188880.0,
+    "approved_current": 3100,
+    "approved_proposed": 3350,
+    "defaults_avoided": 210,
+    "good_customers_gained": 330
+  },
+  "new_orders": {
+    "approved": 1265,
+    "denied": 735,
+    "total_approved_amount": 8710000.0,
+    "current_approved": 1180,
+    "changed_vs_current": 410
+  },
+  "by_risk_band": [
+    { "band": "0–5%", "orders": 980, "observed_default_rate": 0.03, "current_result": 151000.0, "proposed_result": 158000.0 },
+    { "band": "5–10%", "orders": 1210, "observed_default_rate": 0.07, "current_result": 142000.0, "proposed_result": 171000.0 },
+    { "band": "10–20%", "orders": 1160, "observed_default_rate": 0.14, "current_result": 98000.0, "proposed_result": 236000.0 },
+    { "band": "20–40%", "orders": 620, "observed_default_rate": 0.28, "current_result": 61340.0, "proposed_result": 136220.0 },
+    { "band": "> 40%", "orders": 326, "observed_default_rate": 0.52, "current_result": 60000.0, "proposed_result": 0.0 }
+  ]
+}

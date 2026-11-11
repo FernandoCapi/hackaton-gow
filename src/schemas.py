@@ -1,0 +1,256 @@
+"""API contract between the decision engine and the front end.
+
+These Pydantic models are the single source of truth: FastAPI publishes them as OpenAPI
+(contracts/openapi.json) and the front generates its TypeScript types from that file.
+After the freeze, changes must be additive only (new optional fields or new routes).
+
+Conventions: money in BRL with 2 decimals, rates as fractions (0.12 = 12%), ISO dates,
+decision values identical to the official CSV.
+"""
+from datetime import date, datetime
+from typing import Generic, Literal, TypeVar
+
+from pydantic import BaseModel, ConfigDict, Field
+
+Decision = Literal["APROVADO", "NEGADO"]
+SectionMode = Literal["fixtures", "live"]
+Money = float
+Rate = float
+
+T = TypeVar("T")
+
+
+class Model(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+
+# --- errors and pagination ------------------------------------------------------------
+
+
+class ErrorBody(Model):
+    code: str = Field(examples=["order_not_found"])
+    message: str = Field(examples=["Pedido P-99999 não existe na base de novos pedidos."])
+
+
+class ErrorResponse(Model):
+    error: ErrorBody
+
+
+class Page(Model, Generic[T]):
+    items: list[T]
+    total: int
+    page: int
+    page_size: int
+
+
+# --- health ---------------------------------------------------------------------------
+
+
+class Health(Model):
+    status: Literal["ok"]
+    mode: SectionMode = Field(description="'fixtures' enquanto alguma seção ainda usa dados de exemplo")
+    sections: dict[str, SectionMode] = Field(description="Origem dos dados por rota")
+    data_cutoff: date
+    model_version: str | None = None
+
+
+# --- summary --------------------------------------------------------------------------
+
+
+class ResultBlock(Model):
+    approved: int
+    denied: int
+    approved_amount: Money
+    expected_result: Money = Field(description="Resultado esperado em R$ pela regra +15% / +5% / -60%")
+
+
+class ModelQuality(Model):
+    auc: float = Field(description="Capacidade do modelo de separar bons e maus pagadores (0,5 a 1)")
+    auc_current_rule: float = Field(description="Mesma medida para a regra atual (score > 600)")
+    trained_until: date
+    validated_on: str = Field(examples=["contratos de jul/2025 a dez/2025"])
+
+
+class Summary(Model):
+    new_orders_total: int
+    historical_mature_total: int
+    base_default_rate: Rate
+    current_policy: ResultBlock
+    proposed_policy: ResultBlock
+    gain: Money = Field(description="proposed_policy.expected_result - current_policy.expected_result")
+    model: ModelQuality
+
+
+# --- patterns -------------------------------------------------------------------------
+
+
+class PatternGroup(Model):
+    label: str
+    default_rate: Rate
+    customers: int
+
+
+class Pattern(Model):
+    id: str
+    sentence: str = Field(description="Frase pronta no formato do manual")
+    group_description: str
+    group_default_rate: Rate
+    overall_default_rate: Rate
+    customers_affected: int
+    direction: Literal["worse", "better"]
+    current_policy_view: Literal["approves", "denies", "mixed"] = Field(
+        description="Como a política atual trata esse grupo"
+    )
+    groups: list[PatternGroup] = Field(description="Barras do gráfico, já agregadas")
+
+
+# --- policy ---------------------------------------------------------------------------
+
+
+class PolicyParams(Model):
+    max_restrictions: int = Field(0, ge=0, le=10, description="Nega acima deste número de restrições")
+    risk_cutoff: Rate = Field(0.20, ge=0, le=1, description="Nega com chance de calote acima disto")
+    safety_margin: Rate = Field(0.0, ge=0, le=0.5, description="Margem sobre o ponto de equilíbrio")
+    amount_rule: Literal["maximize_expected_profit", "fixed_bands"] = "maximize_expected_profit"
+    min_amount: Money = Field(500.0, ge=500, le=30000)
+
+
+class ParamOption(Model):
+    value: str
+    label: str
+
+
+class ParamSpec(Model):
+    name: str = Field(description="Chave em PolicyParams")
+    label: str
+    description: str
+    kind: Literal["number", "select"]
+    min: float | None = None
+    max: float | None = None
+    step: float | None = None
+    unit: Literal["percent", "brl", "count"] | None = None
+    options: list[ParamOption] | None = None
+    value: float | str
+
+
+class PolicyStep(Model):
+    order: int
+    kind: Literal["filter", "risk", "amount", "limit"]
+    title: str
+    rule_text: str
+
+
+class Policy(Model):
+    version: int
+    approved_at: datetime | None
+    approved_by: str | None
+    note: str | None = None
+    params: PolicyParams
+    steps: list[PolicyStep]
+    param_specs: list[ParamSpec]
+
+
+class ApproveRequest(Model):
+    params: PolicyParams
+    approved_by: str = Field(min_length=1)
+    note: str | None = None
+
+
+# --- simulation -----------------------------------------------------------------------
+
+
+class SimulationRequest(Model):
+    params: PolicyParams
+
+
+class HistoricalResult(Model):
+    current_result: Money
+    proposed_result: Money
+    gain: Money
+    approved_current: int
+    approved_proposed: int
+    defaults_avoided: int = Field(description="Calotes que a política atual aprovou e a proposta nega")
+    good_customers_gained: int = Field(description="Bons pagadores que a atual negaria e a proposta aprova")
+
+
+class NewOrdersResult(Model):
+    approved: int
+    denied: int
+    total_approved_amount: Money
+    current_approved: int
+    changed_vs_current: int
+
+
+class RiskBand(Model):
+    band: str = Field(examples=["5–10%"])
+    orders: int
+    observed_default_rate: Rate
+    current_result: Money
+    proposed_result: Money
+
+
+class SimulationResult(Model):
+    params: PolicyParams
+    historical: HistoricalResult
+    new_orders: NewOrdersResult
+    by_risk_band: list[RiskBand]
+
+
+# --- orders ---------------------------------------------------------------------------
+
+
+class OrderSummary(Model):
+    order_id: str
+    customer_id: str
+    order_date: date
+    requested_amount: Money
+    term_months: int
+    decision: Decision
+    approved_amount: Money
+    default_risk: Rate
+    expected_profit: Money
+    current_decision: Decision
+    current_approved_amount: Money
+    changed_vs_current: bool
+
+
+class BureauInfo(Model):
+    score: int
+    active_restrictions: int
+    other_installments: Money
+    inquiries_90d: int
+    bureau_history_months: int
+
+
+class AccountInfo(Model):
+    months_of_history: int
+    avg_salary_inflow: Money
+    avg_total_inflow: Money
+    avg_outflow: Money
+    min_balance: Money
+    overdraft_days_12m: int
+
+
+class DecisionStep(Model):
+    order: int
+    title: str
+    result: Literal["passou", "negou", "ajustou"]
+    detail: str
+
+
+class OrderDetail(OrderSummary):
+    employment_type: str
+    income_declared: Money
+    installment: Money = Field(description="Parcela do valor aprovado (ou do solicitado, se negado)")
+    income_commitment: Rate = Field(description="(parcela + parcelas em outras instituições) / renda")
+    bureau: BureauInfo
+    account: AccountInfo
+    reasons: list[str]
+    steps: list[DecisionStep]
+
+
+class OrderPage(Page[OrderSummary]):
+    pass
+
+
+OrderSort = Literal["risk", "amount", "order_id"]

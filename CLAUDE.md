@@ -47,7 +47,10 @@ python -m src.bureau                         # bureau dos pedidos novos -> data/
 python -m src.profile --save                 # perfil do schema em docs/perfil-banco.md
 python -m src.train                          # modelo baseline + artifacts/
 python -m src.explain                        # explicação via API (ANTHROPIC_API_KEY); sem chave, gera o prompt para /explicar
-streamlit run app.py                         # painel
+streamlit run app.py                         # painel (legado; o painel novo é o Next em web/)
+uvicorn src.api:app --reload --port 8000     # API do motor para o front (docs em /docs)
+python -m src.api --export-openapi           # atualiza contracts/openapi.json após mudar src/schemas.py
+python -m pytest -q                          # testes (inclui o contrato da API)
 ```
 
 Use o Python da `.venv` (`.venv\Scripts\python.exe` no Windows, `.venv/bin/python` no Mac/Linux).
@@ -60,6 +63,13 @@ Use o Python da `.venv` (`.venv\Scripts\python.exe` no Windows, `.venv/bin/pytho
 - `src/train.py` — LightGBM; grava métricas, previsões por id e fatores em `artifacts/`.
 - `src/explain.py` — transforma métricas e fatores agregados em texto para o cliente.
 - `app.py` — painel Streamlit: o que está acontecendo, por quê, o que fazer.
+- `src/schemas.py` — contrato da API (fonte da verdade); `src/api.py` — rotas FastAPI `/v1`;
+  `src/service.py` — fachada que as rotas chamam (exemplos em `contracts/fixtures/` até o
+  motor real assumir cada seção). Guia para o front: `docs/api.md`.
+- `contracts/` — `openapi.json` (gera os tipos TypeScript do front) e `fixtures/` (exemplos
+  inventados, sem dados do banco).
+- `web/` — painel em Next (front), consome a API por proxy `/api/*` → `localhost:8000/v1/*`.
+- `src/bureau.py` — bureau dos pedidos novos com novas tentativas e cache em `data/`.
 - `docs/` — briefing, perfil do banco, dicionário de dados e roteiro do pitch.
 
 O dataset de exemplo (churn sintético, `scripts/load_sample.py`) serve só de ensaio.

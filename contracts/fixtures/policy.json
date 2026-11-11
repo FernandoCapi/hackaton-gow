@@ -1,0 +1,104 @@
+{
+  "version": 1,
+  "approved_at": null,
+  "approved_by": null,
+  "note": "Proposta inicial da IA, aguardando aprovação do analista.",
+  "params": {
+    "max_restrictions": 0,
+    "risk_cutoff": 0.2,
+    "safety_margin": 0.0,
+    "amount_rule": "maximize_expected_profit",
+    "min_amount": 500.0
+  },
+  "steps": [
+    {
+      "order": 1,
+      "kind": "filter",
+      "title": "Filtro de restrições",
+      "rule_text": "Nega pedidos com mais de 0 restrições ativas no bureau."
+    },
+    {
+      "order": 2,
+      "kind": "risk",
+      "title": "Risco estimado pela IA",
+      "rule_text": "Um modelo treinado no histórico estima a chance de o cliente não pagar. Acima de 20%, nega."
+    },
+    {
+      "order": 3,
+      "kind": "amount",
+      "title": "Valor aprovado",
+      "rule_text": "Testa valores de 100% a 30% do pedido e aprova o que dá o maior resultado esperado: valores menores reduzem a parcela e o risco."
+    },
+    {
+      "order": 4,
+      "kind": "limit",
+      "title": "Limites do produto",
+      "rule_text": "O valor fica entre R$ 500 e o menor entre o valor pedido e R$ 30.000; abaixo de R$ 500, nega."
+    }
+  ],
+  "param_specs": [
+    {
+      "name": "max_restrictions",
+      "label": "Restrições ativas aceitas",
+      "description": "Pedidos com mais restrições do que isso são negados antes do modelo.",
+      "kind": "number",
+      "min": 0,
+      "max": 3,
+      "step": 1,
+      "unit": "count",
+      "options": null,
+      "value": 0
+    },
+    {
+      "name": "risk_cutoff",
+      "label": "Risco máximo de calote",
+      "description": "Acima desta chance de não pagar, o pedido é negado. Sem atrasos, o ponto de equilíbrio é 20%.",
+      "kind": "number",
+      "min": 0.05,
+      "max": 0.4,
+      "step": 0.01,
+      "unit": "percent",
+      "options": null,
+      "value": 0.2
+    },
+    {
+      "name": "safety_margin",
+      "label": "Margem de segurança",
+      "description": "Exige que o resultado esperado por real emprestado fique acima desta margem.",
+      "kind": "number",
+      "min": 0,
+      "max": 0.1,
+      "step": 0.005,
+      "unit": "percent",
+      "options": null,
+      "value": 0.0
+    },
+    {
+      "name": "amount_rule",
+      "label": "Como definir o valor",
+      "description": "Maximizar o resultado esperado ou usar faixas fixas de redução por risco.",
+      "kind": "select",
+      "min": null,
+      "max": null,
+      "step": null,
+      "unit": null,
+      "options": [
+        { "value": "maximize_expected_profit", "label": "Maior resultado esperado" },
+        { "value": "fixed_bands", "label": "Faixas fixas por risco" }
+      ],
+      "value": "maximize_expected_profit"
+    },
+    {
+      "name": "min_amount",
+      "label": "Valor mínimo",
+      "description": "Abaixo deste valor o pedido é negado.",
+      "kind": "number",
+      "min": 500,
+      "max": 5000,
+      "step": 100,
+      "unit": "brl",
+      "options": null,
+      "value": 500.0
+    }
+  ]
+}

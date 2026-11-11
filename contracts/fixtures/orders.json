@@ -1,0 +1,341 @@
+[
+  {
+    "order_id": "P-99001",
+    "customer_id": "C-99001",
+    "order_date": "2026-10-03",
+    "requested_amount": 8000.0,
+    "term_months": 12,
+    "decision": "APROVADO",
+    "approved_amount": 8000.0,
+    "default_risk": 0.04,
+    "expected_profit": 800.0,
+    "current_decision": "APROVADO",
+    "current_approved_amount": 8000.0,
+    "changed_vs_current": false,
+    "employment_type": "assalariado",
+    "income_declared": 6200.0,
+    "installment": 803.7,
+    "income_commitment": 0.13,
+    "bureau": {
+      "score": 812,
+      "active_restrictions": 0,
+      "other_installments": 0.0,
+      "inquiries_90d": 1,
+      "bureau_history_months": 128
+    },
+    "account": {
+      "months_of_history": 12,
+      "avg_salary_inflow": 6050.0,
+      "avg_total_inflow": 6900.0,
+      "avg_outflow": 5400.0,
+      "min_balance": 1850.0,
+      "overdraft_days_12m": 0
+    },
+    "reasons": [
+      "Salário cai na conta todo mês e cobre 98% da renda declarada",
+      "Nunca usou cheque especial nos últimos 12 meses",
+      "Score alto (812) e sem dívidas em outras instituições"
+    ],
+    "steps": [
+      {
+        "order": 1,
+        "title": "Filtro de restrições",
+        "result": "passou",
+        "detail": "0 restrições ativas"
+      },
+      {
+        "order": 2,
+        "title": "Risco estimado pela IA",
+        "result": "passou",
+        "detail": "Chance de calote de 4%, abaixo do limite de 20%"
+      },
+      {
+        "order": 3,
+        "title": "Valor aprovado",
+        "result": "passou",
+        "detail": "Valor pedido integral dá o maior resultado esperado"
+      },
+      {
+        "order": 4,
+        "title": "Limites do produto",
+        "result": "passou",
+        "detail": "R$ 8.000 dentro de R$ 500 a R$ 30.000"
+      }
+    ]
+  },
+  {
+    "order_id": "P-99002",
+    "customer_id": "C-99002",
+    "order_date": "2026-10-07",
+    "requested_amount": 24000.0,
+    "term_months": 36,
+    "decision": "APROVADO",
+    "approved_amount": 14400.0,
+    "default_risk": 0.13,
+    "expected_profit": 468.0,
+    "current_decision": "APROVADO",
+    "current_approved_amount": 24000.0,
+    "changed_vs_current": true,
+    "employment_type": "autonomo",
+    "income_declared": 7800.0,
+    "installment": 659.57,
+    "income_commitment": 0.206,
+    "bureau": {
+      "score": 688,
+      "active_restrictions": 0,
+      "other_installments": 950.0,
+      "inquiries_90d": 3,
+      "bureau_history_months": 74
+    },
+    "account": {
+      "months_of_history": 12,
+      "avg_salary_inflow": 2100.0,
+      "avg_total_inflow": 7400.0,
+      "avg_outflow": 7100.0,
+      "min_balance": -420.0,
+      "overdraft_days_12m": 14
+    },
+    "reasons": [
+      "Pedido alto: com o valor integral a chance de calote subiria para 19%",
+      "Entradas variam bastante mês a mês (autônomo)",
+      "Já paga R$ 950 por mês em outras instituições"
+    ],
+    "steps": [
+      {
+        "order": 1,
+        "title": "Filtro de restrições",
+        "result": "passou",
+        "detail": "0 restrições ativas"
+      },
+      {
+        "order": 2,
+        "title": "Risco estimado pela IA",
+        "result": "passou",
+        "detail": "Chance de calote de 13% no valor aprovado"
+      },
+      {
+        "order": 3,
+        "title": "Valor aprovado",
+        "result": "ajustou",
+        "detail": "Reduzido para 60% do pedido: maior resultado esperado"
+      },
+      {
+        "order": 4,
+        "title": "Limites do produto",
+        "result": "passou",
+        "detail": "R$ 14.400 dentro dos limites"
+      }
+    ]
+  },
+  {
+    "order_id": "P-99003",
+    "customer_id": "C-99003",
+    "order_date": "2026-10-11",
+    "requested_amount": 5000.0,
+    "term_months": 18,
+    "decision": "APROVADO",
+    "approved_amount": 5000.0,
+    "default_risk": 0.08,
+    "expected_profit": 350.0,
+    "current_decision": "NEGADO",
+    "current_approved_amount": 0.0,
+    "changed_vs_current": true,
+    "employment_type": "assalariado",
+    "income_declared": 3400.0,
+    "installment": 363.54,
+    "income_commitment": 0.142,
+    "bureau": {
+      "score": 574,
+      "active_restrictions": 0,
+      "other_installments": 120.0,
+      "inquiries_90d": 1,
+      "bureau_history_months": 40
+    },
+    "account": {
+      "months_of_history": 12,
+      "avg_salary_inflow": 3350.0,
+      "avg_total_inflow": 3600.0,
+      "avg_outflow": 3100.0,
+      "min_balance": 380.0,
+      "overdraft_days_12m": 0
+    },
+    "reasons": [
+      "Score abaixo de 600, mas salário estável na conta há 12 meses",
+      "Parcela compromete só 11% da renda",
+      "Sem uso de cheque especial"
+    ],
+    "steps": [
+      {
+        "order": 1,
+        "title": "Filtro de restrições",
+        "result": "passou",
+        "detail": "0 restrições ativas"
+      },
+      {
+        "order": 2,
+        "title": "Risco estimado pela IA",
+        "result": "passou",
+        "detail": "Chance de calote de 8%"
+      },
+      {
+        "order": 3,
+        "title": "Valor aprovado",
+        "result": "passou",
+        "detail": "Valor pedido integral"
+      },
+      {
+        "order": 4,
+        "title": "Limites do produto",
+        "result": "passou",
+        "detail": "R$ 5.000 dentro dos limites"
+      }
+    ]
+  },
+  {
+    "order_id": "P-99004",
+    "customer_id": "C-99004",
+    "order_date": "2026-10-14",
+    "requested_amount": 12000.0,
+    "term_months": 24,
+    "decision": "NEGADO",
+    "approved_amount": 0.0,
+    "default_risk": 0.34,
+    "expected_profit": 0.0,
+    "current_decision": "APROVADO",
+    "current_approved_amount": 12000.0,
+    "changed_vs_current": true,
+    "employment_type": "empresario",
+    "income_declared": 9100.0,
+    "installment": 708.57,
+    "income_commitment": 0.331,
+    "bureau": {
+      "score": 745,
+      "active_restrictions": 0,
+      "other_installments": 2300.0,
+      "inquiries_90d": 7,
+      "bureau_history_months": 96
+    },
+    "account": {
+      "months_of_history": 12,
+      "avg_salary_inflow": 0.0,
+      "avg_total_inflow": 8200.0,
+      "avg_outflow": 9400.0,
+      "min_balance": -2600.0,
+      "overdraft_days_12m": 71
+    },
+    "reasons": [
+      "71 dias no cheque especial nos últimos 12 meses",
+      "Saídas maiores que as entradas na maior parte do ano",
+      "7 consultas ao CPF nos últimos 90 dias"
+    ],
+    "steps": [
+      {
+        "order": 1,
+        "title": "Filtro de restrições",
+        "result": "passou",
+        "detail": "0 restrições ativas"
+      },
+      {
+        "order": 2,
+        "title": "Risco estimado pela IA",
+        "result": "negou",
+        "detail": "Chance de calote de 34%, acima do limite de 20%"
+      }
+    ]
+  },
+  {
+    "order_id": "P-99005",
+    "customer_id": "C-99005",
+    "order_date": "2026-10-20",
+    "requested_amount": 3000.0,
+    "term_months": 12,
+    "decision": "NEGADO",
+    "approved_amount": 0.0,
+    "default_risk": 0.22,
+    "expected_profit": 0.0,
+    "current_decision": "NEGADO",
+    "current_approved_amount": 0.0,
+    "changed_vs_current": false,
+    "employment_type": "assalariado",
+    "income_declared": 2600.0,
+    "installment": 301.39,
+    "income_commitment": 0.235,
+    "bureau": {
+      "score": 702,
+      "active_restrictions": 2,
+      "other_installments": 310.0,
+      "inquiries_90d": 2,
+      "bureau_history_months": 58
+    },
+    "account": {
+      "months_of_history": 12,
+      "avg_salary_inflow": 2550.0,
+      "avg_total_inflow": 2700.0,
+      "avg_outflow": 2650.0,
+      "min_balance": 40.0,
+      "overdraft_days_12m": 3
+    },
+    "reasons": [
+      "2 restrições ativas no bureau"
+    ],
+    "steps": [
+      {
+        "order": 1,
+        "title": "Filtro de restrições",
+        "result": "negou",
+        "detail": "2 restrições ativas; o limite é 0"
+      }
+    ]
+  },
+  {
+    "order_id": "P-99006",
+    "customer_id": "C-99006",
+    "order_date": "2026-10-28",
+    "requested_amount": 15000.0,
+    "term_months": 24,
+    "decision": "NEGADO",
+    "approved_amount": 0.0,
+    "default_risk": 0.27,
+    "expected_profit": 0.0,
+    "current_decision": "NEGADO",
+    "current_approved_amount": 0.0,
+    "changed_vs_current": false,
+    "employment_type": "aposentado",
+    "income_declared": 1900.0,
+    "installment": 885.71,
+    "income_commitment": 0.466,
+    "bureau": {
+      "score": 655,
+      "active_restrictions": 0,
+      "other_installments": 0.0,
+      "inquiries_90d": 0,
+      "bureau_history_months": 150
+    },
+    "account": {
+      "months_of_history": 5,
+      "avg_salary_inflow": 1880.0,
+      "avg_total_inflow": 1950.0,
+      "avg_outflow": 1700.0,
+      "min_balance": 210.0,
+      "overdraft_days_12m": 0
+    },
+    "reasons": [
+      "Parcela pedida compromete 47% da renda",
+      "Conta aberta há só 5 meses"
+    ],
+    "steps": [
+      {
+        "order": 1,
+        "title": "Filtro de restrições",
+        "result": "passou",
+        "detail": "0 restrições ativas"
+      },
+      {
+        "order": 2,
+        "title": "Risco estimado pela IA",
+        "result": "negou",
+        "detail": "Chance de calote de 27% mesmo com o menor valor testado"
+      }
+    ]
+  }
+]

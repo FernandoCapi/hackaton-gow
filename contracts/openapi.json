@@ -1,0 +1,1518 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Fortuna Crédito — motor de decisão",
+    "description": "Contrato entre o motor de decisão (Python) e o painel (Next). Ver docs/api.md.",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/v1/health": {
+      "get": {
+        "tags": [
+          "status"
+        ],
+        "summary": "Get Health",
+        "operationId": "get_health_v1_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/summary": {
+      "get": {
+        "tags": [
+          "painel"
+        ],
+        "summary": "Get Summary",
+        "operationId": "get_summary_v1_summary_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Summary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/patterns": {
+      "get": {
+        "tags": [
+          "painel"
+        ],
+        "summary": "Get Patterns",
+        "operationId": "get_patterns_v1_patterns_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Pattern"
+                  },
+                  "type": "array",
+                  "title": "Response Get Patterns V1 Patterns Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/policy": {
+      "get": {
+        "tags": [
+          "política"
+        ],
+        "summary": "Get Policy",
+        "operationId": "get_policy_v1_policy_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Policy"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/policy/approve": {
+      "post": {
+        "tags": [
+          "política"
+        ],
+        "summary": "Post Approve",
+        "operationId": "post_approve_v1_policy_approve_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApproveRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Policy"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/simulate": {
+      "post": {
+        "tags": [
+          "política"
+        ],
+        "summary": "Post Simulate",
+        "operationId": "post_simulate_v1_simulate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimulationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimulationResult"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/orders": {
+      "get": {
+        "tags": [
+          "pedidos"
+        ],
+        "summary": "Get Orders",
+        "operationId": "get_orders_v1_orders_get",
+        "parameters": [
+          {
+            "name": "decision",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "APROVADO",
+                    "NEGADO"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Decision"
+            }
+          },
+          {
+            "name": "changed",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Só pedidos em que a decisão difere da política atual",
+              "title": "Changed"
+            },
+            "description": "Só pedidos em que a decisão difere da política atual"
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Busca por id do pedido ou do cliente",
+              "title": "Q"
+            },
+            "description": "Busca por id do pedido ou do cliente"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "risk",
+                "amount",
+                "order_id"
+              ],
+              "type": "string",
+              "default": "risk",
+              "title": "Sort"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Page Size"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderPage"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        }
+      }
+    },
+    "/v1/orders/{order_id}": {
+      "get": {
+        "tags": [
+          "pedidos"
+        ],
+        "summary": "Get Order",
+        "operationId": "get_order_v1_orders__order_id__get",
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        }
+      }
+    },
+    "/v1/decisions.csv": {
+      "get": {
+        "tags": [
+          "pedidos"
+        ],
+        "summary": "Get Decisions Csv",
+        "operationId": "get_decisions_csv_v1_decisions_csv_get",
+        "responses": {
+          "200": {
+            "description": "Arquivo de decisões no formato oficial",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "text/csv": {}
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AccountInfo": {
+        "properties": {
+          "months_of_history": {
+            "type": "integer",
+            "title": "Months Of History"
+          },
+          "avg_salary_inflow": {
+            "type": "number",
+            "title": "Avg Salary Inflow"
+          },
+          "avg_total_inflow": {
+            "type": "number",
+            "title": "Avg Total Inflow"
+          },
+          "avg_outflow": {
+            "type": "number",
+            "title": "Avg Outflow"
+          },
+          "min_balance": {
+            "type": "number",
+            "title": "Min Balance"
+          },
+          "overdraft_days_12m": {
+            "type": "integer",
+            "title": "Overdraft Days 12M"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "months_of_history",
+          "avg_salary_inflow",
+          "avg_total_inflow",
+          "avg_outflow",
+          "min_balance",
+          "overdraft_days_12m"
+        ],
+        "title": "AccountInfo"
+      },
+      "ApproveRequest": {
+        "properties": {
+          "params": {
+            "$ref": "#/components/schemas/PolicyParams"
+          },
+          "approved_by": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Approved By"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "params",
+          "approved_by"
+        ],
+        "title": "ApproveRequest"
+      },
+      "BureauInfo": {
+        "properties": {
+          "score": {
+            "type": "integer",
+            "title": "Score"
+          },
+          "active_restrictions": {
+            "type": "integer",
+            "title": "Active Restrictions"
+          },
+          "other_installments": {
+            "type": "number",
+            "title": "Other Installments"
+          },
+          "inquiries_90d": {
+            "type": "integer",
+            "title": "Inquiries 90D"
+          },
+          "bureau_history_months": {
+            "type": "integer",
+            "title": "Bureau History Months"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "score",
+          "active_restrictions",
+          "other_installments",
+          "inquiries_90d",
+          "bureau_history_months"
+        ],
+        "title": "BureauInfo"
+      },
+      "DecisionStep": {
+        "properties": {
+          "order": {
+            "type": "integer",
+            "title": "Order"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "result": {
+            "type": "string",
+            "enum": [
+              "passou",
+              "negou",
+              "ajustou"
+            ],
+            "title": "Result"
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "order",
+          "title",
+          "result",
+          "detail"
+        ],
+        "title": "DecisionStep"
+      },
+      "ErrorBody": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code",
+            "examples": [
+              "order_not_found"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "examples": [
+              "Pedido P-99999 não existe na base de novos pedidos."
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "ErrorBody"
+      },
+      "ErrorResponse": {
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ErrorBody"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "title": "ErrorResponse"
+      },
+      "Health": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "const": "ok",
+            "title": "Status"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "fixtures",
+              "live"
+            ],
+            "title": "Mode",
+            "description": "'fixtures' enquanto alguma seção ainda usa dados de exemplo"
+          },
+          "sections": {
+            "additionalProperties": {
+              "type": "string",
+              "enum": [
+                "fixtures",
+                "live"
+              ]
+            },
+            "type": "object",
+            "title": "Sections",
+            "description": "Origem dos dados por rota"
+          },
+          "data_cutoff": {
+            "type": "string",
+            "format": "date",
+            "title": "Data Cutoff"
+          },
+          "model_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Version"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status",
+          "mode",
+          "sections",
+          "data_cutoff"
+        ],
+        "title": "Health"
+      },
+      "HistoricalResult": {
+        "properties": {
+          "current_result": {
+            "type": "number",
+            "title": "Current Result"
+          },
+          "proposed_result": {
+            "type": "number",
+            "title": "Proposed Result"
+          },
+          "gain": {
+            "type": "number",
+            "title": "Gain"
+          },
+          "approved_current": {
+            "type": "integer",
+            "title": "Approved Current"
+          },
+          "approved_proposed": {
+            "type": "integer",
+            "title": "Approved Proposed"
+          },
+          "defaults_avoided": {
+            "type": "integer",
+            "title": "Defaults Avoided",
+            "description": "Calotes que a política atual aprovou e a proposta nega"
+          },
+          "good_customers_gained": {
+            "type": "integer",
+            "title": "Good Customers Gained",
+            "description": "Bons pagadores que a atual negaria e a proposta aprova"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "current_result",
+          "proposed_result",
+          "gain",
+          "approved_current",
+          "approved_proposed",
+          "defaults_avoided",
+          "good_customers_gained"
+        ],
+        "title": "HistoricalResult"
+      },
+      "ModelQuality": {
+        "properties": {
+          "auc": {
+            "type": "number",
+            "title": "Auc",
+            "description": "Capacidade do modelo de separar bons e maus pagadores (0,5 a 1)"
+          },
+          "auc_current_rule": {
+            "type": "number",
+            "title": "Auc Current Rule",
+            "description": "Mesma medida para a regra atual (score > 600)"
+          },
+          "trained_until": {
+            "type": "string",
+            "format": "date",
+            "title": "Trained Until"
+          },
+          "validated_on": {
+            "type": "string",
+            "title": "Validated On",
+            "examples": [
+              "contratos de jul/2025 a dez/2025"
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "auc",
+          "auc_current_rule",
+          "trained_until",
+          "validated_on"
+        ],
+        "title": "ModelQuality"
+      },
+      "NewOrdersResult": {
+        "properties": {
+          "approved": {
+            "type": "integer",
+            "title": "Approved"
+          },
+          "denied": {
+            "type": "integer",
+            "title": "Denied"
+          },
+          "total_approved_amount": {
+            "type": "number",
+            "title": "Total Approved Amount"
+          },
+          "current_approved": {
+            "type": "integer",
+            "title": "Current Approved"
+          },
+          "changed_vs_current": {
+            "type": "integer",
+            "title": "Changed Vs Current"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "approved",
+          "denied",
+          "total_approved_amount",
+          "current_approved",
+          "changed_vs_current"
+        ],
+        "title": "NewOrdersResult"
+      },
+      "OrderDetail": {
+        "properties": {
+          "order_id": {
+            "type": "string",
+            "title": "Order Id"
+          },
+          "customer_id": {
+            "type": "string",
+            "title": "Customer Id"
+          },
+          "order_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Order Date"
+          },
+          "requested_amount": {
+            "type": "number",
+            "title": "Requested Amount"
+          },
+          "term_months": {
+            "type": "integer",
+            "title": "Term Months"
+          },
+          "decision": {
+            "type": "string",
+            "enum": [
+              "APROVADO",
+              "NEGADO"
+            ],
+            "title": "Decision"
+          },
+          "approved_amount": {
+            "type": "number",
+            "title": "Approved Amount"
+          },
+          "default_risk": {
+            "type": "number",
+            "title": "Default Risk"
+          },
+          "expected_profit": {
+            "type": "number",
+            "title": "Expected Profit"
+          },
+          "current_decision": {
+            "type": "string",
+            "enum": [
+              "APROVADO",
+              "NEGADO"
+            ],
+            "title": "Current Decision"
+          },
+          "current_approved_amount": {
+            "type": "number",
+            "title": "Current Approved Amount"
+          },
+          "changed_vs_current": {
+            "type": "boolean",
+            "title": "Changed Vs Current"
+          },
+          "employment_type": {
+            "type": "string",
+            "title": "Employment Type"
+          },
+          "income_declared": {
+            "type": "number",
+            "title": "Income Declared"
+          },
+          "installment": {
+            "type": "number",
+            "title": "Installment",
+            "description": "Parcela do valor aprovado (ou do solicitado, se negado)"
+          },
+          "income_commitment": {
+            "type": "number",
+            "title": "Income Commitment",
+            "description": "(parcela + parcelas em outras instituições) / renda"
+          },
+          "bureau": {
+            "$ref": "#/components/schemas/BureauInfo"
+          },
+          "account": {
+            "$ref": "#/components/schemas/AccountInfo"
+          },
+          "reasons": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Reasons"
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/DecisionStep"
+            },
+            "type": "array",
+            "title": "Steps"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "order_id",
+          "customer_id",
+          "order_date",
+          "requested_amount",
+          "term_months",
+          "decision",
+          "approved_amount",
+          "default_risk",
+          "expected_profit",
+          "current_decision",
+          "current_approved_amount",
+          "changed_vs_current",
+          "employment_type",
+          "income_declared",
+          "installment",
+          "income_commitment",
+          "bureau",
+          "account",
+          "reasons",
+          "steps"
+        ],
+        "title": "OrderDetail"
+      },
+      "OrderPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/OrderSummary"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page"
+          },
+          "page_size": {
+            "type": "integer",
+            "title": "Page Size"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "page",
+          "page_size"
+        ],
+        "title": "OrderPage"
+      },
+      "OrderSummary": {
+        "properties": {
+          "order_id": {
+            "type": "string",
+            "title": "Order Id"
+          },
+          "customer_id": {
+            "type": "string",
+            "title": "Customer Id"
+          },
+          "order_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Order Date"
+          },
+          "requested_amount": {
+            "type": "number",
+            "title": "Requested Amount"
+          },
+          "term_months": {
+            "type": "integer",
+            "title": "Term Months"
+          },
+          "decision": {
+            "type": "string",
+            "enum": [
+              "APROVADO",
+              "NEGADO"
+            ],
+            "title": "Decision"
+          },
+          "approved_amount": {
+            "type": "number",
+            "title": "Approved Amount"
+          },
+          "default_risk": {
+            "type": "number",
+            "title": "Default Risk"
+          },
+          "expected_profit": {
+            "type": "number",
+            "title": "Expected Profit"
+          },
+          "current_decision": {
+            "type": "string",
+            "enum": [
+              "APROVADO",
+              "NEGADO"
+            ],
+            "title": "Current Decision"
+          },
+          "current_approved_amount": {
+            "type": "number",
+            "title": "Current Approved Amount"
+          },
+          "changed_vs_current": {
+            "type": "boolean",
+            "title": "Changed Vs Current"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "order_id",
+          "customer_id",
+          "order_date",
+          "requested_amount",
+          "term_months",
+          "decision",
+          "approved_amount",
+          "default_risk",
+          "expected_profit",
+          "current_decision",
+          "current_approved_amount",
+          "changed_vs_current"
+        ],
+        "title": "OrderSummary"
+      },
+      "ParamOption": {
+        "properties": {
+          "value": {
+            "type": "string",
+            "title": "Value"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "value",
+          "label"
+        ],
+        "title": "ParamOption"
+      },
+      "ParamSpec": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Chave em PolicyParams"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "number",
+              "select"
+            ],
+            "title": "Kind"
+          },
+          "min": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min"
+          },
+          "max": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max"
+          },
+          "step": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Step"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "percent",
+                  "brl",
+                  "count"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          },
+          "options": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ParamOption"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Options"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "label",
+          "description",
+          "kind",
+          "value"
+        ],
+        "title": "ParamSpec"
+      },
+      "Pattern": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "sentence": {
+            "type": "string",
+            "title": "Sentence",
+            "description": "Frase pronta no formato do manual"
+          },
+          "group_description": {
+            "type": "string",
+            "title": "Group Description"
+          },
+          "group_default_rate": {
+            "type": "number",
+            "title": "Group Default Rate"
+          },
+          "overall_default_rate": {
+            "type": "number",
+            "title": "Overall Default Rate"
+          },
+          "customers_affected": {
+            "type": "integer",
+            "title": "Customers Affected"
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "worse",
+              "better"
+            ],
+            "title": "Direction"
+          },
+          "current_policy_view": {
+            "type": "string",
+            "enum": [
+              "approves",
+              "denies",
+              "mixed"
+            ],
+            "title": "Current Policy View",
+            "description": "Como a política atual trata esse grupo"
+          },
+          "groups": {
+            "items": {
+              "$ref": "#/components/schemas/PatternGroup"
+            },
+            "type": "array",
+            "title": "Groups",
+            "description": "Barras do gráfico, já agregadas"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "sentence",
+          "group_description",
+          "group_default_rate",
+          "overall_default_rate",
+          "customers_affected",
+          "direction",
+          "current_policy_view",
+          "groups"
+        ],
+        "title": "Pattern"
+      },
+      "PatternGroup": {
+        "properties": {
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "default_rate": {
+            "type": "number",
+            "title": "Default Rate"
+          },
+          "customers": {
+            "type": "integer",
+            "title": "Customers"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "label",
+          "default_rate",
+          "customers"
+        ],
+        "title": "PatternGroup"
+      },
+      "Policy": {
+        "properties": {
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "approved_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approved At"
+          },
+          "approved_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approved By"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "params": {
+            "$ref": "#/components/schemas/PolicyParams"
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/PolicyStep"
+            },
+            "type": "array",
+            "title": "Steps"
+          },
+          "param_specs": {
+            "items": {
+              "$ref": "#/components/schemas/ParamSpec"
+            },
+            "type": "array",
+            "title": "Param Specs"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "version",
+          "approved_at",
+          "approved_by",
+          "params",
+          "steps",
+          "param_specs"
+        ],
+        "title": "Policy"
+      },
+      "PolicyParams": {
+        "properties": {
+          "max_restrictions": {
+            "type": "integer",
+            "maximum": 10.0,
+            "minimum": 0.0,
+            "title": "Max Restrictions",
+            "description": "Nega acima deste número de restrições",
+            "default": 0
+          },
+          "risk_cutoff": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Risk Cutoff",
+            "description": "Nega com chance de calote acima disto",
+            "default": 0.2
+          },
+          "safety_margin": {
+            "type": "number",
+            "maximum": 0.5,
+            "minimum": 0.0,
+            "title": "Safety Margin",
+            "description": "Margem sobre o ponto de equilíbrio",
+            "default": 0.0
+          },
+          "amount_rule": {
+            "type": "string",
+            "enum": [
+              "maximize_expected_profit",
+              "fixed_bands"
+            ],
+            "title": "Amount Rule",
+            "default": "maximize_expected_profit"
+          },
+          "min_amount": {
+            "type": "number",
+            "maximum": 30000.0,
+            "minimum": 500.0,
+            "title": "Min Amount",
+            "default": 500.0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "PolicyParams"
+      },
+      "PolicyStep": {
+        "properties": {
+          "order": {
+            "type": "integer",
+            "title": "Order"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "filter",
+              "risk",
+              "amount",
+              "limit"
+            ],
+            "title": "Kind"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "rule_text": {
+            "type": "string",
+            "title": "Rule Text"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "order",
+          "kind",
+          "title",
+          "rule_text"
+        ],
+        "title": "PolicyStep"
+      },
+      "ResultBlock": {
+        "properties": {
+          "approved": {
+            "type": "integer",
+            "title": "Approved"
+          },
+          "denied": {
+            "type": "integer",
+            "title": "Denied"
+          },
+          "approved_amount": {
+            "type": "number",
+            "title": "Approved Amount"
+          },
+          "expected_result": {
+            "type": "number",
+            "title": "Expected Result",
+            "description": "Resultado esperado em R$ pela regra +15% / +5% / -60%"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "approved",
+          "denied",
+          "approved_amount",
+          "expected_result"
+        ],
+        "title": "ResultBlock"
+      },
+      "RiskBand": {
+        "properties": {
+          "band": {
+            "type": "string",
+            "title": "Band",
+            "examples": [
+              "5–10%"
+            ]
+          },
+          "orders": {
+            "type": "integer",
+            "title": "Orders"
+          },
+          "observed_default_rate": {
+            "type": "number",
+            "title": "Observed Default Rate"
+          },
+          "current_result": {
+            "type": "number",
+            "title": "Current Result"
+          },
+          "proposed_result": {
+            "type": "number",
+            "title": "Proposed Result"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "band",
+          "orders",
+          "observed_default_rate",
+          "current_result",
+          "proposed_result"
+        ],
+        "title": "RiskBand"
+      },
+      "SimulationRequest": {
+        "properties": {
+          "params": {
+            "$ref": "#/components/schemas/PolicyParams"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "params"
+        ],
+        "title": "SimulationRequest"
+      },
+      "SimulationResult": {
+        "properties": {
+          "params": {
+            "$ref": "#/components/schemas/PolicyParams"
+          },
+          "historical": {
+            "$ref": "#/components/schemas/HistoricalResult"
+          },
+          "new_orders": {
+            "$ref": "#/components/schemas/NewOrdersResult"
+          },
+          "by_risk_band": {
+            "items": {
+              "$ref": "#/components/schemas/RiskBand"
+            },
+            "type": "array",
+            "title": "By Risk Band"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "params",
+          "historical",
+          "new_orders",
+          "by_risk_band"
+        ],
+        "title": "SimulationResult"
+      },
+      "Summary": {
+        "properties": {
+          "new_orders_total": {
+            "type": "integer",
+            "title": "New Orders Total"
+          },
+          "historical_mature_total": {
+            "type": "integer",
+            "title": "Historical Mature Total"
+          },
+          "base_default_rate": {
+            "type": "number",
+            "title": "Base Default Rate"
+          },
+          "current_policy": {
+            "$ref": "#/components/schemas/ResultBlock"
+          },
+          "proposed_policy": {
+            "$ref": "#/components/schemas/ResultBlock"
+          },
+          "gain": {
+            "type": "number",
+            "title": "Gain",
+            "description": "proposed_policy.expected_result - current_policy.expected_result"
+          },
+          "model": {
+            "$ref": "#/components/schemas/ModelQuality"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "new_orders_total",
+          "historical_mature_total",
+          "base_default_rate",
+          "current_policy",
+          "proposed_policy",
+          "gain",
+          "model"
+        ],
+        "title": "Summary"
+      }
+    }
+  }
+}
