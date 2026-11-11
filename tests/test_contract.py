@@ -19,6 +19,22 @@ def client(tmp_path, monkeypatch):
     service.engine.cache_clear()
 
 
+def test_without_model_every_route_reports_the_error(tmp_path, monkeypatch):
+    """No silent fallback to invented numbers: the panel must show why the engine is down."""
+    from src import risk_model
+
+    monkeypatch.delenv("ENGINE_MODE", raising=False)
+    monkeypatch.setattr(risk_model, "MODEL_FILE", tmp_path / "missing.joblib")
+    service.engine.cache_clear()
+    try:
+        for path in ("/v1/health", "/v1/summary", "/v1/orders"):
+            response = TestClient(api.app).get(path)
+            assert response.status_code == 503
+            assert response.json()["error"]["code"] == "engine_unavailable"
+    finally:
+        service.engine.cache_clear()
+
+
 def test_health_reports_each_section(client):
     body = client.get("/v1/health").json()
     assert body["status"] == "ok"

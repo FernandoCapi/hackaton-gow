@@ -72,6 +72,11 @@ async def order_not_found(_: Request, exc: service.OrderNotFound) -> JSONRespons
     return _error(404, "order_not_found", f"Pedido {exc.args[0]} não existe na base de novos pedidos.")
 
 
+@app.exception_handler(service.EngineUnavailable)
+async def engine_unavailable(_: Request, exc: service.EngineUnavailable) -> JSONResponse:
+    return _error(503, "engine_unavailable", str(exc))
+
+
 v1 = "/v1"
 
 

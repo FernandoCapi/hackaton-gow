@@ -1,9 +1,9 @@
 """Facade between the API routes and the decision engine.
 
-Every route calls one function here. When the trained model (artifacts/risk_model.joblib)
-and the database are available, answers come from the engine ("live"); otherwise from
-contracts/fixtures/ (invented, schema-valid examples), so the front end can work without
-Python data. ENGINE_MODE=fixtures forces the examples.
+Every route calls one function here and answers from the engine (trained model in
+artifacts/risk_model.joblib + database). When the engine cannot load, every route raises
+EngineUnavailable (HTTP 503 with the reason) instead of showing invented numbers.
+ENGINE_MODE=fixtures answers with contracts/fixtures/; it exists only for the contract tests.
 """
 import json
 import os
@@ -49,6 +49,10 @@ class OrderNotFound(LookupError):
     pass
 
 
+class EngineUnavailable(RuntimeError):
+    pass
+
+
 @lru_cache
 def _fixture(name: str):
     return json.loads((FIXTURES / f"{name}.json").read_text(encoding="utf-8"))
@@ -68,20 +72,24 @@ def _pct(value: float) -> str:
 
 @lru_cache(maxsize=1)
 def engine():
-    """The decision engine, or None when it cannot run here (no model or no database)."""
+    """The decision engine; None only under ENGINE_MODE=fixtures (tests). Failures are not
+    cached, so the next request retries once the model or database is back."""
     if os.getenv("ENGINE_MODE") == "fixtures":
         return None
     from src import risk_model
 
     if not risk_model.MODEL_FILE.exists():
-        return None
+        raise EngineUnavailable(
+            "Modelo de risco não encontrado no servidor (artifacts/risk_model.joblib). "
+            "Rode python -m src.risk_model no build da API."
+        )
     try:
         from src.simulate import Engine
 
         return Engine()
-    except Exception as error:  # noqa: BLE001 - fall back to examples, but say why
-        print(f"Motor indisponível, usando exemplos: {error}")
-        return None
+    except Exception as error:  # noqa: BLE001 - surface any load failure to the panel
+        print(f"Motor indisponível: {error!r}")
+        raise EngineUnavailable(f"Não foi possível carregar o motor de decisão: {error}") from error
 
 
 def is_live() -> bool:
