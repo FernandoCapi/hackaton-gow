@@ -1,28 +1,36 @@
 """Facade between the API routes and the decision engine.
 
-Every route calls one function here. While the engine is being built, the functions
-answer from contracts/fixtures/ (invented, schema-valid examples). Replace them one by one
-with the real engine and switch the section to "live" in SECTIONS; the routes and the
-front end do not change.
+Every route calls one function here. When the trained model (artifacts/risk_model.joblib)
+and the database are available, answers come from the engine ("live"); otherwise from
+contracts/fixtures/ (invented, schema-valid examples), so the front end can work without
+Python data. ENGINE_MODE=fixtures forces the examples.
 """
-import csv
-import io
 import json
+import os
 from datetime import date, datetime
 from functools import lru_cache
 
+import pandas as pd
+
 import config
 from src.schemas import (
+    AccountInfo,
     ApproveRequest,
+    BureauInfo,
+    DecisionStep,
     Health,
+    ModelQuality,
     OrderDetail,
     OrderPage,
     OrderSort,
     OrderSummary,
+    ParamOption,
+    ParamSpec,
     Pattern,
     Policy,
     PolicyParams,
     PolicyStep,
+    ResultBlock,
     SectionMode,
     SimulationResult,
     Summary,
@@ -31,15 +39,7 @@ from src.schemas import (
 FIXTURES = config.ROOT / "contracts" / "fixtures"
 APPROVED_POLICY = config.ARTIFACTS / "approved_policy.json"
 DATA_CUTOFF = date(2026, 9, 30)
-
-SECTIONS: dict[str, SectionMode] = {
-    "summary": "fixtures",
-    "patterns": "fixtures",
-    "policy": "fixtures",
-    "simulate": "fixtures",
-    "orders": "fixtures",
-    "decisions_csv": "fixtures",
-}
+SECTION_NAMES = ["summary", "patterns", "policy", "simulate", "orders", "decisions_csv"]
 
 
 class OrderNotFound(LookupError):
@@ -60,19 +60,91 @@ def _pct(value: float) -> str:
     return number.replace(".", ",") + "%"
 
 
+# --- engine ---------------------------------------------------------------------------
+
+
+@lru_cache(maxsize=1)
+def engine():
+    """The decision engine, or None when it cannot run here (no model or no database)."""
+    if os.getenv("ENGINE_MODE") == "fixtures":
+        return None
+    from src import risk_model
+
+    if not risk_model.MODEL_FILE.exists():
+        return None
+    try:
+        from src.simulate import Engine
+
+        return Engine()
+    except Exception as error:  # noqa: BLE001 - fall back to examples, but say why
+        print(f"Motor indisponível, usando exemplos: {error}")
+        return None
+
+
+def is_live() -> bool:
+    return engine() is not None
+
+
+@lru_cache(maxsize=8)
+def _decisions(params_json: str) -> pd.DataFrame:
+    return engine().decide_new(PolicyParams.model_validate_json(params_json))
+
+
+def _current_decisions() -> pd.DataFrame:
+    return _decisions(current_policy().params.model_dump_json())
+
+
 # --- health ---------------------------------------------------------------------------
 
 
 def health() -> Health:
-    mode: SectionMode = "live" if all(m == "live" for m in SECTIONS.values()) else "fixtures"
-    return Health(status="ok", mode=mode, sections=SECTIONS, data_cutoff=DATA_CUTOFF)
+    mode: SectionMode = "live" if is_live() else "fixtures"
+    sections: dict[str, SectionMode] = {name: mode for name in SECTION_NAMES}
+    sections["patterns"] = "fixtures"  # patterns still come from the consolidated analysis
+    model_version = None
+    if mode == "live":
+        model_version = f"lightgbm-calote-{engine().metrics['trained_until']}"
+    overall: SectionMode = "live" if all(m == "live" for m in sections.values()) else "fixtures"
+    return Health(status="ok", mode=overall, sections=sections, data_cutoff=DATA_CUTOFF, model_version=model_version)
 
 
 # --- summary and patterns -------------------------------------------------------------
 
 
 def summary() -> Summary:
-    return Summary.model_validate(_fixture("summary"))
+    if not is_live():
+        return Summary.model_validate(_fixture("summary"))
+    e = engine()
+    decisions = _current_decisions()
+    approved = decisions.decision.eq("APROVADO")
+    current_approved = decisions.current_decision.eq("APROVADO")
+    validation = e.metrics["temporal_validation"]
+    proposed_result = float(decisions.expected_profit.sum())
+    current_result = float(decisions.current_expected_profit.sum())
+    return Summary(
+        new_orders_total=len(decisions),
+        historical_mature_total=len(e.hist_grid.orders),
+        base_default_rate=e.metrics["default_rate"],
+        current_policy=ResultBlock(
+            approved=int(current_approved.sum()),
+            denied=int((~current_approved).sum()),
+            approved_amount=round(float(decisions.current_amount.sum()), 2),
+            expected_result=round(current_result, 2),
+        ),
+        proposed_policy=ResultBlock(
+            approved=int(approved.sum()),
+            denied=int((~approved).sum()),
+            approved_amount=round(float(decisions.approved_amount.sum()), 2),
+            expected_result=round(proposed_result, 2),
+        ),
+        gain=round(proposed_result - current_result, 2),
+        model=ModelQuality(
+            auc=validation["auc"],
+            auc_current_rule=validation["auc_score_bureau"],
+            trained_until=e.metrics["trained_until"],
+            validated_on=f"pedidos de {validation['test_period']} (nunca vistos no treino)",
+        ),
+    )
 
 
 def patterns() -> list[Pattern]:
@@ -81,75 +153,106 @@ def patterns() -> list[Pattern]:
 
 # --- policy ---------------------------------------------------------------------------
 
+PARAM_SPECS: list[dict] = [
+    dict(name="min_score", label="Score mínimo", kind="number", min=0, max=700, step=10, unit="count",
+         description="Nega com score até este valor. O piloto só testou acima de 450; o score não prevê calote."),
+    dict(name="min_income", label="Renda mínima", kind="number", min=0, max=5000, step=100, unit="brl",
+         description="Nega com renda declarada até este valor. O piloto só testou acima de R$ 1.500."),
+    dict(name="max_restrictions", label="Restrições aceitas", kind="number", min=0, max=2, step=1, unit="count",
+         description="Com 1 restrição o calote foi de 19–23% no piloto, acima do ponto de equilíbrio."),
+    dict(name="max_outflow_ratio", label="Saídas máximas sobre entradas", kind="number", min=0.5, max=1.2,
+         step=0.05, unit="percent", description="Quem gasta mais de 90% do que entra teve 91% de calote."),
+    dict(name="max_recent_overdraft_months", label="Meses de cheque especial aceitos (últimos 3)", kind="number",
+         min=0, max=3, step=1, unit="count",
+         description="Cheque especial em 2 ou mais dos 3 meses antes do pedido: 85–91% de calote."),
+    dict(name="max_drain", label="Saque atípico máximo (vezes a saída típica)", kind="number", min=1.5,
+         max=10, step=0.5, unit="count", description="Conta esvaziada antes do pedido: 82–87% de calote."),
+    dict(name="min_inflow_ratio", label="Entradas mínimas sobre a renda declarada", kind="number", min=0,
+         max=1, step=0.05, unit="percent", description="Entradas abaixo de 60% da renda declarada: 71% de calote."),
+    dict(name="max_inquiries_90d", label="Consultas ao CPF aceitas (90 dias)", kind="number", min=0, max=15,
+         step=1, unit="count", description="8 ou mais consultas em 90 dias: 83% de calote."),
+    dict(name="max_commitment", label="Parcela máxima sobre a renda efetiva", kind="number", min=0.10,
+         max=0.35, step=0.01, unit="percent",
+         description="Renda efetiva = menor entre a declarada e a média de entradas. Acima de 25% o calote salta."),
+    dict(name="amount_rule", label="Como definir o valor", kind="select",
+         options=[{"value": "full_or_deny", "label": "Valor pedido ou nega"},
+                  {"value": "maximize_expected_profit", "label": "Reduzir até caber (maior resultado esperado)"}],
+         description="Reduzir valor não tem dados históricos que provem que reduz o calote."),
+    dict(name="risk_cutoff", label="Risco máximo de calote", kind="number", min=0.05, max=0.30, step=0.01,
+         unit="percent", description="Para quem a política atual aprovaria. Ponto de equilíbrio: ~17%."),
+    dict(name="risk_cutoff_expansion", label="Risco máximo para quem a atual nega", kind="number", min=0.03,
+         max=0.30, step=0.01, unit="percent", description="Mais rígido: a evidência vem só do piloto."),
+    dict(name="safety_margin", label="Resultado mínimo por real emprestado", kind="number", min=0, max=0.10,
+         step=0.005, unit="percent", description="Margem de segurança sobre o ponto de equilíbrio."),
+    dict(name="late_rate", label="Chance de atraso considerada", kind="number", min=0, max=0.5, step=0.01,
+         unit="percent", description="Atraso não é previsível nos dados; usamos a média do histórico (~20%)."),
+    dict(name="min_amount", label="Valor mínimo", kind="number", min=500, max=5000, step=100, unit="brl",
+         description="Abaixo deste valor o pedido é negado."),
+]
 
-def policy_steps(params: PolicyParams) -> list[PolicyStep]:
+
+def policy_steps(p: PolicyParams) -> list[PolicyStep]:
     """Business-language steps of the proposed policy, in the order they are applied."""
     amount_text = (
-        "Testa valores de 100% a 30% do pedido e aprova o que dá o maior resultado esperado: "
-        "valores menores reduzem a parcela e o risco."
-        if params.amount_rule == "maximize_expected_profit"
-        else "Reduz o valor por faixa de risco: quanto maior o risco, menor a fração do pedido aprovada."
+        "Aprova o valor pedido se couber; se não couber, nega (pedir acima da capacidade já é sinal de risco)."
+        if p.amount_rule == "full_or_deny"
+        else "Se o valor pedido não couber, testa valores menores (até 30% do pedido) e escolhe o de maior resultado esperado."
     )
-    margin_text = (
-        f" Exige resultado esperado de pelo menos {_pct(params.safety_margin)} do valor."
-        if params.safety_margin
-        else ""
-    )
+    margin = f" e exige resultado esperado de pelo menos {_pct(p.safety_margin)} do valor" if p.safety_margin else ""
     return [
-        PolicyStep(
-            order=1,
-            kind="filter",
-            title="Filtro de restrições",
-            rule_text=f"Nega pedidos com mais de {params.max_restrictions} restrições ativas no bureau.",
-        ),
-        PolicyStep(
-            order=2,
-            kind="risk",
-            title="Risco estimado pela IA",
-            rule_text=(
-                "Um modelo treinado no histórico estima a chance de o cliente não pagar. "
-                f"Acima de {_pct(params.risk_cutoff)}, nega.{margin_text}"
-            ),
-        ),
-        PolicyStep(order=3, kind="amount", title="Valor aprovado", rule_text=amount_text),
-        PolicyStep(
-            order=4,
-            kind="limit",
-            title="Limites do produto",
-            rule_text=(
-                f"O valor fica entre {_brl(params.min_amount)} e o menor entre o valor pedido e "
-                f"R$ 30.000; abaixo de {_brl(params.min_amount)}, nega."
-            ),
-        ),
+        PolicyStep(order=1, kind="filter", title="Fora do que o piloto testou",
+                   rule_text=f"Nega score até {p.min_score}, renda até {_brl(p.min_income)} ou mais de "
+                             f"{p.max_restrictions} restrições ativas: não há dados para aprovar com segurança."),
+        PolicyStep(order=2, kind="filter", title="Sinais de aperto na conta",
+                   rule_text=f"Nega se as saídas passam de {_pct(p.max_outflow_ratio)} das entradas, se houve cheque "
+                             f"especial em mais de {p.max_recent_overdraft_months} dos 3 meses antes do pedido, se a "
+                             f"conta foi esvaziada (saída {p.max_drain:g}x a típica), se as entradas cobrem menos de "
+                             f"{_pct(p.min_inflow_ratio)} da renda declarada ou com mais de {p.max_inquiries_90d} "
+                             f"consultas ao CPF em 90 dias."),
+        PolicyStep(order=3, kind="capacity", title="Capacidade de pagamento",
+                   rule_text=f"A parcela pode consumir até {_pct(p.max_commitment)} da renda efetiva (o menor valor "
+                             f"entre a renda declarada e a média de entradas na conta). {amount_text}"),
+        PolicyStep(order=4, kind="risk", title="Risco estimado pela IA",
+                   rule_text=f"Um modelo treinado no histórico estima a chance de calote no valor aprovado. Nega acima "
+                             f"de {_pct(p.risk_cutoff)} para quem a política atual aprovaria e acima de "
+                             f"{_pct(p.risk_cutoff_expansion)} para quem ela negaria{margin}. O score não é usado como corte."),
+        PolicyStep(order=5, kind="limit", title="Limites do produto",
+                   rule_text=f"O valor fica entre {_brl(p.min_amount)} e o menor entre o valor pedido e R$ 30.000."),
     ]
 
 
-def _with_params(base: Policy, params: PolicyParams) -> Policy:
-    values = {
-        name: value if isinstance(value, str) else float(value)  # ParamSpec.value is float | str
-        for name, value in params.model_dump().items()
-    }
-    specs = [spec.model_copy(update={"value": values[spec.name]}) for spec in base.param_specs]
-    return base.model_copy(update={"params": params, "steps": policy_steps(params), "param_specs": specs})
+def _param_specs(p: PolicyParams) -> list[ParamSpec]:
+    values = p.model_dump()
+    specs = []
+    for spec in PARAM_SPECS:
+        value = values[spec["name"]]
+        options = [ParamOption(**option) for option in spec.get("options", [])] or None
+        specs.append(
+            ParamSpec(
+                **{key: spec[key] for key in ("name", "label", "description", "kind")},
+                min=spec.get("min"), max=spec.get("max"), step=spec.get("step"), unit=spec.get("unit"),
+                options=options, value=value if isinstance(value, str) else float(value),
+            )
+        )
+    return specs
+
+
+def _policy(version: int, params: PolicyParams, approved_at=None, approved_by=None, note=None) -> Policy:
+    return Policy(version=version, approved_at=approved_at, approved_by=approved_by, note=note,
+                  params=params, steps=policy_steps(params), param_specs=_param_specs(params))
 
 
 def current_policy() -> Policy:
     """The policy in force: the last one approved by the analyst, else the AI proposal."""
     if APPROVED_POLICY.exists():
         return Policy.model_validate_json(APPROVED_POLICY.read_text(encoding="utf-8"))
-    base = Policy.model_validate(_fixture("policy"))
-    return _with_params(base, base.params)
+    return _policy(1, PolicyParams(), note="Proposta inicial da IA, aguardando aprovação do analista.")
 
 
 def approve_policy(request: ApproveRequest) -> Policy:
-    previous = current_policy()
-    approved = _with_params(previous, request.params).model_copy(
-        update={
-            "version": previous.version + 1,
-            "approved_at": datetime.now().astimezone(),
-            "approved_by": request.approved_by,
-            "note": request.note,
-        }
+    approved = _policy(
+        current_policy().version + 1, request.params,
+        approved_at=datetime.now().astimezone(), approved_by=request.approved_by, note=request.note,
     )
     config.ARTIFACTS.mkdir(exist_ok=True)
     APPROVED_POLICY.write_text(approved.model_dump_json(indent=2), encoding="utf-8")
@@ -160,50 +263,95 @@ def approve_policy(request: ApproveRequest) -> Policy:
 
 
 def simulate(params: PolicyParams) -> SimulationResult:
-    """Fixture mode: scales the example so the front can see sliders react.
+    if is_live():
+        return engine().simulate(params)
+    return _fixture_simulation(params)
 
-    The numbers are NOT a real simulation until this section is "live".
-    """
+
+def _fixture_simulation(params: PolicyParams) -> SimulationResult:
+    """Example mode: scales the example so the front can see sliders react (not real)."""
     base = SimulationResult.model_validate(_fixture("simulation"))
-    looseness = params.risk_cutoff / 0.20  # >1 approves more, <1 approves less
-    quality = max(0.0, 1 - 4 * (params.risk_cutoff - 0.20) ** 2 - 2 * params.safety_margin)
-    restriction_bonus = 1 + 0.03 * params.max_restrictions
-
-    hist = base.historical
+    looseness = params.risk_cutoff / 0.15
+    quality = max(0.0, 1 - 4 * (params.risk_cutoff - 0.15) ** 2 - 2 * params.safety_margin)
+    hist, new = base.historical, base.new_orders
     proposed_result = round(hist.proposed_result * quality, 2)
-    approved_proposed = round(hist.approved_proposed * looseness**0.3 * restriction_bonus)
-    new = base.new_orders
-    approved_new = min(2000, round(new.approved * looseness**0.3 * restriction_bonus))
-    bands = [
-        band.model_copy(update={"proposed_result": round(band.proposed_result * quality, 2)})
-        for band in base.by_risk_band
-    ]
-    return base.model_copy(
-        update={
-            "params": params,
-            "historical": hist.model_copy(
-                update={
-                    "proposed_result": proposed_result,
-                    "gain": round(proposed_result - hist.current_result, 2),
-                    "approved_proposed": approved_proposed,
-                }
-            ),
-            "new_orders": new.model_copy(
-                update={
-                    "approved": approved_new,
-                    "denied": 2000 - approved_new,
-                    "total_approved_amount": round(new.total_approved_amount * approved_new / new.approved, 2),
-                }
-            ),
-            "by_risk_band": bands,
-        }
-    )
+    approved_new = min(2000, round(new.approved * looseness**0.3))
+    return base.model_copy(update={
+        "params": params,
+        "historical": hist.model_copy(update={
+            "proposed_result": proposed_result,
+            "gain": round(proposed_result - hist.current_result, 2),
+            "approved_proposed": round(hist.approved_proposed * looseness**0.3),
+        }),
+        "new_orders": new.model_copy(update={
+            "approved": approved_new,
+            "denied": 2000 - approved_new,
+            "total_approved_amount": round(new.total_approved_amount * approved_new / new.approved, 2),
+        }),
+        "by_risk_band": [b.model_copy(update={"proposed_result": round(b.proposed_result * quality, 2)})
+                         for b in base.by_risk_band],
+    })
 
 
 # --- orders ---------------------------------------------------------------------------
 
 
-def _orders() -> list[OrderDetail]:
+def _summary_from(order_id: str, row: pd.Series, o: pd.Series) -> dict:
+    return dict(
+        order_id=order_id,
+        customer_id=o.id_cliente,
+        order_date=o.data_pedido.date(),
+        requested_amount=float(o.valor_solicitado),
+        term_months=int(o.prazo_meses),
+        decision=row.decision,
+        approved_amount=round(float(row.approved_amount), 2),
+        default_risk=round(float(row.default_risk), 4),
+        expected_profit=round(float(row.expected_profit), 2),
+        current_decision=row.current_decision,
+        current_approved_amount=round(float(row.current_amount), 2),
+        changed_vs_current=bool(row.changed_vs_current),
+    )
+
+
+def _live_detail(order_id: str) -> OrderDetail:
+    from src.features import installment
+    from src.policy import decision_steps, reasons
+
+    decisions = _current_decisions()
+    if order_id not in decisions.index:
+        raise OrderNotFound(order_id)
+    row = decisions.loc[order_id]
+    o = engine().new_grid.orders.loc[order_id]
+    params = current_policy().params
+    amount = row.approved_amount if row.decision == "APROVADO" else o.valor_base
+    parcela = float(installment(amount, o.prazo_meses))
+    bureau = BureauInfo(
+        score=int(o.score), active_restrictions=int(o.restricoes_ativas),
+        other_installments=float(o.parcelas_outras_instituicoes), inquiries_90d=int(o.consultas_90_dias),
+        bureau_history_months=int(o.meses_historico_bureau),
+    ) if not o.bureau_ausente else BureauInfo(score=0, active_restrictions=0, other_installments=0,
+                                              inquiries_90d=0, bureau_history_months=0)
+    return OrderDetail(
+        **_summary_from(order_id, row, o),
+        employment_type=str(o.tipo_vinculo),
+        income_declared=float(o.renda_declarada),
+        installment=round(parcela, 2),
+        income_commitment=round((parcela + float(o.parcelas_outras_instituicoes or 0)) / float(o.renda_efetiva), 4),
+        bureau=bureau,
+        account=AccountInfo(
+            months_of_history=int(o.mov_meses),
+            avg_salary_inflow=round(float(o.salario_media), 2),
+            avg_total_inflow=round(float(o.entradas_media), 2),
+            avg_outflow=round(float(o.saidas_media), 2),
+            min_balance=round(float(o.saldo_minimo), 2),
+            overdraft_days_12m=int(o.dias_cheque_12m),
+        ),
+        reasons=reasons(o),
+        steps=[DecisionStep(**step) for step in decision_steps(row, o, params)],
+    )
+
+
+def _orders_fixture() -> list[OrderDetail]:
     return [OrderDetail.model_validate(item) for item in _fixture("orders")]
 
 
@@ -215,7 +363,14 @@ def list_orders(
     page: int = 1,
     page_size: int = 50,
 ) -> OrderPage:
-    rows = _orders()
+    if is_live():
+        decisions = _current_decisions()
+        orders = engine().new_grid.orders
+        rows = [OrderSummary(**_summary_from(order_id, row, orders.loc[order_id]))
+                for order_id, row in decisions.iterrows()]
+    else:
+        rows = [OrderSummary.model_validate(r.model_dump(include=set(OrderSummary.model_fields)))
+                for r in _orders_fixture()]
     if decision:
         rows = [row for row in rows if row.decision == decision]
     if changed is not None:
@@ -230,23 +385,27 @@ def list_orders(
     }[sort]
     rows.sort(key=key)
     start = (page - 1) * page_size
-    items = [OrderSummary.model_validate(row.model_dump(include=set(OrderSummary.model_fields))) for row in rows]
-    return OrderPage(items=items[start : start + page_size], total=len(rows), page=page, page_size=page_size)
+    return OrderPage(items=rows[start : start + page_size], total=len(rows), page=page, page_size=page_size)
 
 
 def get_order(order_id: str) -> OrderDetail:
-    for row in _orders():
-        if row.order_id == order_id.strip().upper():
+    order_id = order_id.strip().upper()
+    if is_live():
+        return _live_detail(order_id)
+    for row in _orders_fixture():
+        if row.order_id == order_id:
             return row
     raise OrderNotFound(order_id)
 
 
 def decisions_csv() -> str:
-    """Official file format: id_pedido,decisao,valor_aprovado (UTF-8, comma, 2 decimals)."""
-    buffer = io.StringIO()
-    writer = csv.writer(buffer, lineterminator="\n")
-    writer.writerow(["id_pedido", "decisao", "valor_aprovado"])
-    for row in sorted(_orders(), key=lambda row: row.order_id):
-        amount = row.approved_amount if row.decision == "APROVADO" else 0.0
-        writer.writerow([row.order_id, row.decision, f"{amount:.2f}"])
-    return buffer.getvalue()
+    """Official file format, from the same engine that generates selic_final.csv."""
+    from src.decide import csv_text
+
+    if is_live():
+        return csv_text(_current_decisions())
+    frame = pd.DataFrame(
+        [{"decision": r.decision, "approved_amount": r.approved_amount} for r in _orders_fixture()],
+        index=[r.order_id for r in _orders_fixture()],
+    )
+    return csv_text(frame)
