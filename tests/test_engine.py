@@ -100,7 +100,49 @@ def test_patterns_are_computed_from_data(engine):
     assert not re.search(r"\b[PC]-\d{5}\b", payload), "padroes nao podem expor ids de clientes"
 
 
+def test_minimum_balance_agrees_with_overdraft_days(engine):
+    # The oldest statement month carries an overdraft artifact; both measures skip it.
+    o = engine.orders
+    assert not ((o.saldo_minimo < 0) & (o.dias_cheque_12m == 0)).any()
+    assert not ((o.saldo_minimo >= 0) & (o.dias_cheque_12m > 0)).any()
+
+
+def test_pilot_shows_good_customers_gained(engine):
+    assert engine.simulate(PolicyParams(), with_steps=False).historical.good_customers_gained > 0
+
+
+@pytest.mark.parametrize("rule", ["full_or_deny", "maximize_expected_profit"])
+def test_step_titles_match_the_policy_page(engine, rule):
+    from src import service
+    from src.policy import decision_steps
+
+    params = PolicyParams(amount_rule=rule)
+    titles = {step.title for step in service.policy_steps(params)}
+    decisions = engine.decide_new(params)
+    orders = engine.new_grid.orders
+    sample = pd.concat([decisions[decisions.denied_at.eq(step)].head(3) for step in decisions.denied_at.unique()])
+    for order_id, row in sample.iterrows():
+        assert {s["title"] for s in decision_steps(row, orders.loc[order_id], params)} <= titles
+    impacts = engine.simulate(params).steps_impact
+    assert {impact.step for impact in impacts} <= titles
+
+
 def test_proposed_policy_beats_current_on_history(engine):
     result = engine.simulate(PolicyParams(), with_steps=False)
     assert result.historical.gain > 0
     assert result.new_orders.expected_gain > 0
+
+
+def test_counteroffers_only_for_capacity_or_risk_and_never_in_official_file(engine, monkeypatch):
+    from src import service
+
+    monkeypatch.setattr(service, "engine", lambda: engine)
+    service._decisions.cache_clear()
+    official = service._current_decisions()
+    offers = service._counteroffers()
+    assert len(offers) > 0
+    assert official.loc[offers.index, "decision"].eq("NEGADO").all()  # the official file keeps them denied
+    assert official.loc[offers.index, "denied_at"].isin(service.COUNTEROFFER_STEPS).all()
+    requested = engine.new_grid.orders.loc[offers.index, "valor_solicitado"]
+    assert (offers.approved_amount <= requested + 0.005).all() and (offers.approved_amount >= 500).all()
+    service._decisions.cache_clear()

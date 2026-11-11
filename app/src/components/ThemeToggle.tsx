@@ -36,7 +36,7 @@ export default function ThemeToggle() {
       }}
       aria-label={next === "dark" ? "Usar tema escuro" : "Usar tema claro"}
       title={next === "dark" ? "Tema escuro" : "Tema claro"}
-      className="rounded-md border border-border px-2 py-1 text-sm hover:bg-background"
+      className="rounded-lg px-2 py-1 text-sm text-sidebar-fg ring-1 ring-white/15 hover:bg-sidebar-active"
     >
       <span aria-hidden>{theme === "dark" ? "☀" : "☾"}</span>
     </button>

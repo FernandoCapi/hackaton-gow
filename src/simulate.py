@@ -26,6 +26,7 @@ from src.policy import (
     RiskGrid,
     current_policy,
     proposed_policy,
+    step_title,
 )
 from src.schemas import (
     HistoricalResult,
@@ -96,6 +97,23 @@ class Engine:
         return _concat(grids)
 
     @cached_property
+    def pilot_grid(self) -> RiskGrid:
+        """Approved pilot loans: the only evidence about clients the current policy denies.
+        Younger than the training maturity, so the final model never saw them; their default
+        is still partial (6-12 months)."""
+        o = self.orders
+        pilot = o[o.politica_aplicada.eq("piloto") & o.decisao.eq("aprovado")]
+        return RiskGrid.build(pilot, self.predict)
+
+    def pilot_gains(self, params: PolicyParams) -> int:
+        """Pilot clients the current policy would deny, the proposal approves, and who have
+        not defaulted so far."""
+        decisions = proposed_policy(self.pilot_grid, params)
+        paid = self.pilot_grid.orders.calote.to_numpy() == 0
+        gained = decisions.current_decision.eq("NEGADO").to_numpy() & decisions.decision.eq("APROVADO").to_numpy()
+        return int((gained & paid).sum())
+
+    @cached_property
     def outcome_rate(self) -> np.ndarray:
         return self.hist_grid.orders.situacao_final.map(OUTCOME_RATE).to_numpy()
 
@@ -152,7 +170,7 @@ class Engine:
                 approved_current=int(current_approved.sum()),
                 approved_proposed=int(approved.sum()),
                 defaults_avoided=int((defaulted & current_approved & ~approved).sum()),
-                good_customers_gained=int((~defaulted & ~current_approved & approved).sum()),
+                good_customers_gained=self.pilot_gains(params),
             ),
             new_orders=NewOrdersResult(
                 approved=int(new.decision.eq("APROVADO").sum()),
@@ -176,7 +194,7 @@ class Engine:
             new_without, _ = self.estimated(self.decide_new(params, without))
             impacts.append(
                 StepImpact(
-                    step=step,
+                    step=step_title(step, params),
                     denied_new_orders=int(new_decisions.denied_at.eq(step).sum()),
                     historical_gain_if_removed=round(hist_without - hist_result, 2),
                     new_orders_gain_if_removed=round(new_without - new_result, 2),

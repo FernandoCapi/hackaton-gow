@@ -1,62 +1,95 @@
 @import "tailwindcss";
 
+/* Fortuna Crédito: deep teal (trust, money) with a gold accent. Violet marks EXTRA features,
+   kept visually apart from what the challenge asks for. */
 :root {
-  --background: #f7f7f5;
+  --background: #f3f6f5;
   --surface: #ffffff;
-  --foreground: #1f1f1d;
-  --muted: #6b6a63;
-  --border: #e4e3de;
-  --series-1: #2a78d6; /* política proposta */
-  --series-2: #eb6834; /* regra antiga */
-  --good: #0a7d32;
+  --surface-2: #f8faf9;
+  --foreground: #10201b;
+  --muted: #5d6e68;
+  --border: #e0e7e4;
+  --series-1: #0f766e; /* política proposta */
+  --series-2: #e07a3f; /* regra antiga */
+  --good: #15803d;
   --critical: #c62828;
-  --accent: #1f5fae;
-  --accent-soft: #e8f0fa;
+  --accent: #0f766e;
+  --accent-strong: #0b5953;
+  --accent-soft: #e3f3f0;
+  --gold: #b88a16;
+  --gold-soft: #fbf3dc;
+  --extra: #6d28d9;
+  --extra-soft: #f1eafe;
   --warning-bg: #fff4d6;
   --warning-fg: #6b4e00;
   color-scheme: light;
+  --sidebar: #0b2b26;
+  --sidebar-fg: #e6f2ef;
+  --sidebar-muted: #8fb3ab;
+  --sidebar-active: #134840;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --background: #121211;
-    --surface: #1a1a19;
-    --foreground: #f0efec;
-    --muted: #a8a79e;
-    --border: #2f2f2c;
-    --series-1: #3987e5;
-    --series-2: #d95926;
+    --background: #0c1311;
+    --surface: #131c19;
+    --surface-2: #17221f;
+    --foreground: #e7efec;
+    --muted: #98aaa3;
+    --border: #24322e;
+    --series-1: #2dd4bf;
+    --series-2: #f0955e;
     --good: #4cba6e;
     --critical: #ef6b6b;
-    --accent: #3987e5;
-    --accent-soft: #1d2a3a;
+    --accent: #2dd4bf;
+    --accent-strong: #5eead4;
+    --accent-soft: #10312c;
+    --gold: #e0b84a;
+    --gold-soft: #3a3016;
+    --extra: #b197fc;
+    --extra-soft: #2a2140;
     --warning-bg: #3a2f10;
     --warning-fg: #f3d27a;
     color-scheme: dark;
+    --sidebar: #08110f;
+    --sidebar-fg: #e6f2ef;
+    --sidebar-muted: #7f9c95;
+    --sidebar-active: #123a34;
   }
 }
 
 /* Manual choice from the theme button; keep in sync with the block above. */
 :root[data-theme="dark"] {
-  --background: #121211;
-  --surface: #1a1a19;
-  --foreground: #f0efec;
-  --muted: #a8a79e;
-  --border: #2f2f2c;
-  --series-1: #3987e5;
-  --series-2: #d95926;
+  --background: #0c1311;
+  --surface: #131c19;
+  --surface-2: #17221f;
+  --foreground: #e7efec;
+  --muted: #98aaa3;
+  --border: #24322e;
+  --series-1: #2dd4bf;
+  --series-2: #f0955e;
   --good: #4cba6e;
   --critical: #ef6b6b;
-  --accent: #3987e5;
-  --accent-soft: #1d2a3a;
+  --accent: #2dd4bf;
+  --accent-strong: #5eead4;
+  --accent-soft: #10312c;
+  --gold: #e0b84a;
+  --gold-soft: #3a3016;
+  --extra: #b197fc;
+  --extra-soft: #2a2140;
   --warning-bg: #3a2f10;
   --warning-fg: #f3d27a;
   color-scheme: dark;
+  --sidebar: #08110f;
+  --sidebar-fg: #e6f2ef;
+  --sidebar-muted: #7f9c95;
+  --sidebar-active: #123a34;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
   --color-border: var(--border);
@@ -65,9 +98,18 @@
   --color-good: var(--good);
   --color-critical: var(--critical);
   --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
   --color-accent-soft: var(--accent-soft);
+  --color-gold: var(--gold);
+  --color-gold-soft: var(--gold-soft);
+  --color-extra: var(--extra);
+  --color-extra-soft: var(--extra-soft);
   --color-warning-bg: var(--warning-bg);
   --color-warning-fg: var(--warning-fg);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-fg: var(--sidebar-fg);
+  --color-sidebar-muted: var(--sidebar-muted);
+  --color-sidebar-active: var(--sidebar-active);
   --font-sans: var(--font-plex), system-ui, sans-serif;
 }
 

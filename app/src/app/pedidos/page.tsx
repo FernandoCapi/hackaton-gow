@@ -1,11 +1,12 @@
 "use client";
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { Download, ListChecks } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { api, type OrderQuery } from "@/lib/api";
 import { brl, date, int, pct } from "@/lib/format";
-import { Card, DecisionBadge, Section, Status } from "@/components/ui";
+import { Card, DecisionBadge, RiskMeter, Section, Status } from "@/components/ui";
 
 const PAGE_SIZES = [20, 50, 100, 200]; // 200 is the API maximum for page_size
 const select = "rounded-md border border-border bg-background px-2 py-1.5 text-sm";
@@ -19,7 +20,7 @@ export default function OrdersPage() {
   const pages =orders.data ? Math.max(1, Math.ceil(orders.data.total / query.page_size!)) : 1;
 
   return (
-    <Section title="Pedidos novos" subtitle="Decisão sugerida pela política em vigor, comparada com a regra antiga.">
+    <Section icon={ListChecks} title="Pedidos novos" subtitle="Decisão sugerida pela política em vigor, comparada com a regra antiga.">
       <div className="mb-4 flex flex-wrap items-end gap-3">
         <label className="flex flex-col text-sm">Decisão
           <select className={select} value={query.decision ?? ""} onChange={(e) => set({ decision: (e.target.value || undefined) as OrderQuery["decision"] })}>
@@ -46,7 +47,7 @@ export default function OrdersPage() {
               Baixar selic_final.csv
             </button>
           ) : (
-            <a href="/api/decisions.csv" download className="rounded-md border border-border px-3 py-1.5 text-sm font-medium hover:bg-background">Baixar selic_final.csv</a>
+            <a href="/api/decisions.csv" download className="inline-flex items-center gap-2 rounded-lg bg-accent px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-accent-strong"><Download className="size-4" aria-hidden />Baixar selic_final.csv</a>
           )}
           {csvIsExample && <p className="mt-1 text-xs text-muted">Arquivo de exemplo: não enviar.</p>}
         </div>
@@ -57,7 +58,7 @@ export default function OrdersPage() {
         <Card className="overflow-x-auto p-0">
           <table className="w-full text-sm">
             <caption className="sr-only">Pedidos novos e decisão sugerida</caption>
-            <thead className="border-b border-border text-left text-muted">
+            <thead className="border-b border-border bg-surface-2 text-left text-xs uppercase tracking-wide text-muted">
               <tr>
                 <th className="px-3 py-2 font-medium">Pedido</th>
                 <th className="px-3 py-2 font-medium">Data</th>
@@ -71,12 +72,12 @@ export default function OrdersPage() {
             <tbody>
               {orders.data.items.map((o) => (
                 <tr key={o.order_id} className="border-b border-border last:border-0 hover:bg-background">
-                  <td className="px-3 py-2"><Link href={`/pedidos/${o.order_id}`} className="font-medium underline">{o.order_id}</Link></td>
+                  <td className="px-3 py-2"><Link href={`/pedidos/${o.order_id}`} className="font-medium text-accent hover:underline">{o.order_id}</Link></td>
                   <td className="px-3 py-2">{date(o.order_date)}</td>
                   <td className="px-3 py-2 text-right tabular-nums">{brl(o.requested_amount)}</td>
                   <td className="px-3 py-2"><DecisionBadge decision={o.decision} /></td>
                   <td className="px-3 py-2 text-right tabular-nums">{brl(o.approved_amount)}</td>
-                  <td className="px-3 py-2 text-right tabular-nums">{pct(o.default_risk)}</td>
+                  <td className="px-3 py-2 text-right tabular-nums"><span className="inline-flex items-center gap-2"><RiskMeter value={o.default_risk} />{pct(o.default_risk)}</span></td>
                   <td className="px-3 py-2">
                     <DecisionBadge decision={o.current_decision} subtle />
                   </td>

@@ -197,6 +197,25 @@ export interface components {
             /** Bureau History Months */
             bureau_history_months: number;
         };
+        /**
+         * Counteroffer
+         * @description EXTRA, fora do arquivo oficial: valor menor que a política aprovaria para um pedido negado.
+         */
+        Counteroffer: {
+            /** Amount */
+            amount: number;
+            /** Installment */
+            installment: number;
+            /** Default Risk */
+            default_risk: number;
+            /** Expected Profit */
+            expected_profit: number;
+            /**
+             * Share Of Request
+             * @description amount / valor pedido
+             */
+            share_of_request: number;
+        };
         /** DecisionStep */
         DecisionStep: {
             /** Order */
@@ -385,6 +404,8 @@ export interface components {
             reasons: string[];
             /** Steps */
             steps: components["schemas"]["DecisionStep"][];
+            /** @description EXTRA: só para negados por capacidade ou risco; não entra no selic_final.csv */
+            counteroffer?: components["schemas"]["Counteroffer"] | null;
         };
         /** OrderPage */
         OrderPage: {
@@ -751,6 +772,11 @@ export interface components {
              */
             gain: number;
             model: components["schemas"]["ModelQuality"];
+            /**
+             * Counteroffers
+             * @description EXTRA: pedidos negados por capacidade ou risco que teriam aprovação com um valor menor
+             */
+            counteroffers?: number | null;
         };
     };
     responses: never;

@@ -79,6 +79,9 @@ class Summary(Model):
     proposed_policy: ResultBlock
     gain: Money = Field(description="proposed_policy.expected_result - current_policy.expected_result")
     model: ModelQuality
+    counteroffers: int | None = Field(
+        None, description="EXTRA: pedidos negados por capacidade ou risco que teriam aprovação com um valor menor"
+    )
 
 
 # --- patterns -------------------------------------------------------------------------
@@ -206,7 +209,10 @@ class HistoricalResult(Model):
     approved_current: int
     approved_proposed: int
     defaults_avoided: int = Field(description="Calotes que a política atual aprovou e a proposta nega")
-    good_customers_gained: int = Field(description="Bons pagadores que a atual negaria e a proposta aprova")
+    good_customers_gained: int = Field(
+        description="No piloto (única evidência sobre quem a atual nega): clientes que a atual negaria, a proposta "
+        "aprova e que não deram calote até agora (contratos de 6 a 12 meses, calote ainda parcial)"
+    )
 
 
 class NewOrdersResult(Model):
@@ -287,6 +293,16 @@ class DecisionStep(Model):
     detail: str
 
 
+class Counteroffer(Model):
+    """EXTRA, fora do arquivo oficial: valor menor que a política aprovaria para um pedido negado."""
+
+    amount: Money
+    installment: Money
+    default_risk: Rate
+    expected_profit: Money
+    share_of_request: Rate = Field(description="amount / valor pedido")
+
+
 class OrderDetail(OrderSummary):
     employment_type: str
     income_declared: Money
@@ -296,6 +312,9 @@ class OrderDetail(OrderSummary):
     account: AccountInfo
     reasons: list[str]
     steps: list[DecisionStep]
+    counteroffer: Counteroffer | None = Field(
+        None, description="EXTRA: só para negados por capacidade ou risco; não entra no selic_final.csv"
+    )
 
 
 class OrderPage(Page[OrderSummary]):

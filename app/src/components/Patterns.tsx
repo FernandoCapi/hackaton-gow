@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { AlertTriangle, ArrowRight, Info, Search, Sparkle } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, Cell, LabelList, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { api, type Pattern } from "@/lib/api";
 import { int, pct } from "@/lib/format";
-import { Card, Section, Status } from "./ui";
+import { Card, IconChip, Section, Status } from "./ui";
 
 type Kind = NonNullable<Pattern["kind"]>;
 
@@ -29,11 +30,12 @@ const TITLES: Record<string, string> = {
   large_amount: "Valor acima de R$ 20 mil",
 };
 
-const KINDS: { kind: Kind; label: string; tab: string; hint: string; color: string }[] = [
-  { kind: "risk", label: "Aprovados hoje com calote alto", tab: "Calote alto", hint: "A regra atual aprova; o grupo tem calote acima da base", color: "var(--critical)" },
-  { kind: "opportunity", label: "Negados hoje com calote baixo", tab: "Calote baixo", hint: "A regra atual nega; no piloto, o grupo pagou", color: "var(--good)" },
-  { kind: "trap", label: "Risco que depende de outro fator", tab: "Risco combinado", hint: "Calote alto só quando combinado com outra variável", color: "var(--series-1)" },
-];
+const KINDS = [
+  { kind: "risk", label: "Onde a regra antiga aprova e perde dinheiro", tab: "Calote alto", icon: AlertTriangle, tone: "critical", color: "var(--critical)", border: "border-l-critical" },
+  { kind: "opportunity", label: "Onde a regra antiga nega quem pagaria", tab: "Calote baixo", icon: Sparkle, tone: "good", color: "var(--good)", border: "border-l-good" },
+  { kind: "trap", label: "Parecem perigosos, mas não são", tab: "Falso alarme", icon: Info, tone: "gold", color: "var(--gold)", border: "border-l-gold" },
+] as const;
+type KindInfo = (typeof KINDS)[number];
 
 const EVIDENCE: Record<NonNullable<Pattern["evidence"]>, string> = {
   historico_maduro: "Contratos com 12+ meses",
@@ -41,9 +43,9 @@ const EVIDENCE: Record<NonNullable<Pattern["evidence"]>, string> = {
 };
 
 const POLICY_VIEW: Record<Pattern["current_policy_view"], string> = {
-  approves: "Regra atual aprova",
-  denies: "Regra atual nega",
-  mixed: "Regra atual aprova parte",
+  approves: "Regra antiga aprova",
+  denies: "Regra antiga nega",
+  mixed: "Regra antiga aprova parte",
 };
 
 /** "… contra 9,7% de quem a política atual aprovaria. …" -> "de quem a política atual aprovaria" */
@@ -62,14 +64,14 @@ function PatternChart({ pattern, color }: { pattern: Pattern; color: string }) {
   const highlight = highlightIndex(pattern);
   return (
     <>
-    <ResponsiveContainer width="100%" height={48 + pattern.groups.length * 32}>
+    <ResponsiveContainer width="100%" height={56 + pattern.groups.length * 36}>
       <BarChart data={pattern.groups} layout="vertical" margin={{ left: 8, right: 48, top: 20 }}>
         <CartesianGrid horizontal={false} stroke="var(--border)" />
         <XAxis type="number" tickFormatter={pct} tick={{ fill: "var(--foreground)", fontSize: 11 }} stroke="var(--border)" />
         <YAxis type="category" dataKey="label" width={150} tick={{ fill: "var(--foreground)", fontSize: 11 }} stroke="var(--border)" />
         <Tooltip
           cursor={{ fill: "var(--border)", opacity: 0.4 }}
-          contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", color: "var(--foreground)" }}
+          contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--foreground)" }}
           labelStyle={{ color: "var(--foreground)", fontWeight: 600 }}
           itemStyle={{ color: "var(--foreground)" }}
           separator=": "
@@ -81,7 +83,7 @@ function PatternChart({ pattern, color }: { pattern: Pattern; color: string }) {
           strokeDasharray="4 4"
           label={{ value: `base ${pct(pattern.overall_default_rate)}`, position: "top", fill: "var(--foreground)", fontSize: 11 }}
         />
-        <Bar dataKey="default_rate" radius={[0, 4, 4, 0]} barSize={16}>
+        <Bar dataKey="default_rate" radius={[0, 6, 6, 0]} barSize={18}>
           {pattern.groups.map((g, i) => (
             <Cell key={g.label} fill={highlight === -1 || i === highlight ? color : "var(--muted)"} fillOpacity={i === highlight || highlight === -1 ? 1 : 0.55} />
           ))}
@@ -113,13 +115,17 @@ function PatternPair({ pattern, color }: { pattern: Pattern; color: string }) {
 }
 
 function Tag({ children }: { children: React.ReactNode }) {
-  return <span className="rounded-full border border-border px-2 py-0.5 text-xs text-foreground/80">{children}</span>;
+  return <span className="rounded-full bg-surface-2 px-2 py-0.5 text-xs text-muted ring-1 ring-border">{children}</span>;
 }
 
-function PatternCard({ pattern, color }: { pattern: Pattern; color: string }) {
+function PatternCard({ pattern, info }: { pattern: Pattern; info: KindInfo }) {
+  const { color } = info;
   return (
-    <Card>
-      <h3 className="font-semibold">{TITLES[pattern.id] ?? pattern.group_description}</h3>
+    <Card className={`border-l-4 ${info.border}`}>
+      <div className="flex items-center gap-3">
+        <IconChip icon={info.icon} tone={info.tone} size="sm" />
+        <h3 className="font-semibold">{TITLES[pattern.id] ?? pattern.group_description}</h3>
+      </div>
       <p className="mt-2 flex flex-wrap items-baseline gap-x-2">
         <span className="text-3xl font-semibold tabular-nums" style={{ color }}>{pct(pattern.group_default_rate)}</span>
         <span className="text-sm text-muted">
@@ -128,12 +134,12 @@ function PatternCard({ pattern, color }: { pattern: Pattern; color: string }) {
       </p>
       <div className="mt-3 flex flex-wrap gap-1.5">
         {pattern.policy_step && (
-          <Link href="/politica" className="rounded-full border border-accent/50 bg-accent-soft px-2 py-0.5 text-xs font-medium text-foreground hover:underline">
-            Passo: {pattern.policy_step}
+          <Link href="/politica" className="inline-flex items-center gap-1 rounded-full bg-accent-soft px-2 py-0.5 text-xs font-medium text-accent hover:underline">
+            Passo: {pattern.policy_step} <ArrowRight className="size-3" aria-hidden />
           </Link>
         )}
         {pattern.new_orders_affected != null && (
-          <span className="rounded-full border border-border px-2 py-0.5 text-xs font-medium">
+          <span className="rounded-full bg-gold-soft px-2 py-0.5 text-xs font-medium text-gold">
             {int(pattern.new_orders_affected)} pedidos novos
           </span>
         )}
@@ -161,36 +167,36 @@ export default function Patterns() {
   const [tab, setTab] = useState<Kind>("risk");
   const byKind = (kind: Kind) =>
     (data ?? [])
-      .filter((p) => (p.kind ?? "risk") === kind)
+      .filter((p) => (p.kind ?? (p.direction === "worse" ? "risk" : "opportunity")) === kind)
       .sort((a, b) => (b.new_orders_affected ?? -1) - (a.new_orders_affected ?? -1));
 
   return (
-    <Section title="Padrões encontrados" subtitle="Grupos que pagam pior ou melhor do que a regra atual supõe, no histórico e no piloto.">
+    <Section icon={Search} title="Padrões encontrados" subtitle="Grupos que pagam pior ou melhor do que a regra antiga supõe, no histórico e no piloto.">
       <Status loading={isLoading} error={error} />
       {data && (
         <>
-          <div role="tablist" aria-label="Tipo de padrão" className="mb-4 inline-flex flex-wrap gap-1 rounded-lg bg-border/40 p-1">
-            {KINDS.map(({ kind, tab: short, color }) => (
+          <div role="tablist" aria-label="Tipo de padrão" className="mb-4 inline-flex flex-wrap gap-1 rounded-xl bg-surface-2 p-1 ring-1 ring-border">
+            {KINDS.map(({ kind, tab: short, icon: Icon, color }) => (
               <button
                 key={kind}
                 type="button"
                 role="tab"
                 aria-selected={tab === kind}
                 onClick={() => setTab(kind)}
-                className={`flex items-center gap-2 whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium transition ${tab === kind ? "bg-surface shadow-sm" : "text-foreground/70 hover:text-foreground"}`}
+                className={`flex items-center gap-2 whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium transition ${tab === kind ? "bg-surface shadow-sm ring-1 ring-border" : "text-foreground/70 hover:text-foreground"}`}
               >
-                <span aria-hidden className="h-2 w-2 rounded-full" style={{ background: color }} />
+                <Icon className="size-4" style={{ color }} aria-hidden />
                 {short}
                 <span className="tabular-nums text-muted">{byKind(kind).length}</span>
               </button>
             ))}
           </div>
-          {KINDS.filter(({ kind }) => kind === tab).map(({ kind, label, hint, color }) => (
-            <div key={kind} role="tabpanel">
-              <p className="mb-4 text-sm text-muted"><span className="font-medium text-foreground">{label}.</span> {hint}</p>
-              {byKind(kind).length ? (
+          {KINDS.filter(({ kind }) => kind === tab).map((info) => (
+            <div key={info.kind} role="tabpanel">
+              <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted">{info.label}</h2>
+              {byKind(info.kind).length ? (
                 <div className="grid gap-4 lg:grid-cols-2">
-                  {byKind(kind).map((p) => <PatternCard key={p.id} pattern={p} color={color} />)}
+                  {byKind(info.kind).map((p) => <PatternCard key={p.id} pattern={p} info={info} />)}
                 </div>
               ) : (
                 <p className="text-sm text-muted">Nenhum padrão neste grupo.</p>

@@ -1,6 +1,7 @@
 "use client";
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { BadgeCheck, FlaskConical, History, RefreshCw, ShieldCheck, TrendingUp, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { api, type ParamSpec, type Policy, type PolicyParams, type SimulationResult } from "@/lib/api";
@@ -62,7 +63,7 @@ function ApproveForm({ params }: { params: PolicyParams }) {
       <p className="text-sm font-medium">Aprovar estes parâmetros como política em vigor</p>
       <label htmlFor="approved-by" className="sr-only">Nome do analista</label>
       <input id="approved-by" required value={name} onChange={(e) => setName(e.target.value)} placeholder="Nome do analista" className="rounded-md border border-border bg-background px-2 py-1.5 text-sm" />
-      <button disabled={approve.isPending || !name.trim()} className="rounded-md bg-foreground px-3 py-1.5 text-sm text-background disabled:opacity-50">
+      <button disabled={approve.isPending || !name.trim()} className="rounded-lg bg-accent px-3 py-2 text-sm font-medium text-white hover:bg-accent-strong disabled:opacity-50">
         {approve.isPending ? "Aprovando…" : "Aprovar política"}
       </button>
       {approve.isError && <p role="alert" className="text-sm text-critical">{approve.error.message}</p>}
@@ -142,6 +143,8 @@ function LabBody({ policy }: { policy: Policy }) {
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {data.new_orders.expected_gain != null && (
                 <Stat
+                  icon={TrendingUp}
+                  tone="good"
                   label="Ganho estimado sobre a regra antiga"
                   value={brl(data.new_orders.expected_gain)}
                   hint={data.new_orders.expected_result != null && data.new_orders.current_expected_result != null
@@ -149,14 +152,14 @@ function LabBody({ policy }: { policy: Policy }) {
                     : undefined}
                 />
               )}
-              <Stat label="Aprovados" value={int(data.new_orders.approved)} hint={`Regra antiga: ${int(data.new_orders.current_approved)}`} />
-              <Stat label="Decisões que mudam" value={int(data.new_orders.changed_vs_current)} hint="Em relação à regra antiga" />
+              <Stat icon={BadgeCheck} label="Aprovados" value={int(data.new_orders.approved)} hint={`Regra antiga: ${int(data.new_orders.current_approved)}`} />
+              <Stat icon={RefreshCw} tone="gold" label="Decisões que mudam" value={int(data.new_orders.changed_vs_current)} hint="Em relação à regra antiga" />
             </div>
             <h3 className="mb-2 mt-5 text-sm font-medium text-muted">No histórico (contratos com 12+ meses)</h3>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-              <Stat label="Ganho sobre a regra antiga" value={brl(data.historical.gain)} hint={`${brl(data.historical.proposed_result)} contra ${brl(data.historical.current_result)}`} />
-              <Stat label="Calotes evitados" value={int(data.historical.defaults_avoided)} hint="Aprovados pela regra antiga que a proposta nega" />
-              <Stat label="Bons clientes ganhos" value={int(data.historical.good_customers_gained)} hint="Negados pela regra antiga que a proposta aprova" />
+              <Stat icon={History} tone="good" label="Ganho sobre a regra antiga" value={brl(data.historical.gain)} hint={`${brl(data.historical.proposed_result)} contra ${brl(data.historical.current_result)}`} />
+              <Stat icon={ShieldCheck} tone="critical" label="Calotes evitados" value={int(data.historical.defaults_avoided)} hint="Aprovados pela regra antiga que a proposta nega" />
+              <Stat icon={UserPlus} tone="accent" label="Bons clientes ganhos" value={int(data.historical.good_customers_gained)} hint="Negados pela regra antiga que a proposta aprova" />
             </div>
             <StepsImpact impact={data.steps_impact ?? []} />
           </>
@@ -169,7 +172,7 @@ function LabBody({ policy }: { policy: Policy }) {
 export default function Lab() {
   const { data: policy, isLoading, error } = useQuery({ queryKey: ["policy"], queryFn: api.policy });
   return (
-    <Section title="Laboratório" subtitle="Mude os limites principais, confira o efeito nos pedidos novos e no histórico e aprove. Simular não altera a política em vigor.">
+    <Section icon={FlaskConical} title="Laboratório" subtitle="Mude os limites principais, confira o efeito nos pedidos novos e no histórico e aprove. Simular não altera a política em vigor.">
       <Status loading={isLoading} error={error} />
       {policy?.approved_by && (
         <p role="status" className="mb-4 text-sm">

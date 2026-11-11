@@ -26,7 +26,26 @@ STEP_STRAIN = "Sinais de aperto na conta"
 STEP_CAPACITY = "Capacidade de pagamento"
 STEP_RISK = "Risco estimado pela IA"
 STEP_LIMITS = "Limites do produto"
-STEPS = [STEP_DOMAIN, STEP_STRAIN, STEP_CAPACITY, STEP_RISK, STEP_LIMITS]
+STEPS = [STEP_DOMAIN, STEP_STRAIN, STEP_CAPACITY, STEP_RISK, STEP_LIMITS]  # internal ids (denied_at)
+
+
+def step_title(step: str, params: PolicyParams | None = None) -> str:
+    """Title the analyst sees for each step: one source for the policy page, the order trace,
+    the lab and the patterns. Step 3 depends on the amount rule."""
+    full_or_deny = params is None or params.amount_rule == "full_or_deny"
+    return {
+        STEP_DOMAIN: "Quem pode ser aprovado",
+        STEP_STRAIN: "Nega com sinais de aperto na conta",
+        STEP_CAPACITY: "Nega quando a parcela não cabe" if full_or_deny else "Ajusta o valor à capacidade",
+        STEP_RISK: "Nega pelo risco estimado pela IA",
+        STEP_LIMITS: "Valor aprovado",
+    }[step]
+
+
+def pct(value: float) -> str:
+    """Percent in Brazilian format: one decimal below 10% ("6,5%"), whole above ("25%")."""
+    text = f"{value * 100:.1f}" if abs(value) < 0.10 else f"{value * 100:.0f}"
+    return text.replace(".", ",") + "%"
 NO_BUREAU = "bureau indisponível"
 
 
@@ -180,7 +199,6 @@ def proposed_policy(grid: RiskGrid, p: PolicyParams, disabled: frozenset = froze
 
 def decision_steps(row: pd.Series, o: pd.Series, p: PolicyParams) -> list[dict]:
     """Business-language trace of how one order was decided, step by step."""
-    pct = lambda value: f"{value * 100:.0f}%"
     brl = lambda value: f"R$ {value:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
     steps = []
 
@@ -196,8 +214,8 @@ def decision_steps(row: pd.Series, o: pd.Series, p: PolicyParams) -> list[dict]:
             if o.restricoes_ativas > p.max_restrictions:
                 problems.append(f"{o.restricoes_ativas:.0f} restrições ativas (máximo: {p.max_restrictions})")
             detail = "; ".join(problems)
-        return [{"order": 1, "title": STEP_DOMAIN, "result": "negou", "detail": detail}]
-    steps.append({"order": 1, "title": STEP_DOMAIN, "result": "passou",
+        return [{"order": 1, "title": step_title(STEP_DOMAIN, p), "result": "negou", "detail": detail}]
+    steps.append({"order": 1, "title": step_title(STEP_DOMAIN, p), "result": "passou",
                   "detail": f"Score {o.score:.0f}, renda {brl(o.renda_declarada)}, {o.restricoes_ativas:.0f} restrições"})
 
     if row.denied_at == STEP_STRAIN:
@@ -212,39 +230,38 @@ def decision_steps(row: pd.Series, o: pd.Series, p: PolicyParams) -> list[dict]:
             problems.append(f"entradas cobrem só {pct(o.entradas_sobre_renda)} da renda declarada")
         if o.consultas_90_dias > p.max_inquiries_90d:
             problems.append(f"{o.consultas_90_dias:.0f} consultas ao CPF em 90 dias")
-        steps.append({"order": 2, "title": STEP_STRAIN, "result": "negou", "detail": "; ".join(problems)})
+        steps.append({"order": 2, "title": step_title(STEP_STRAIN, p), "result": "negou", "detail": "; ".join(problems)})
         return steps
-    steps.append({"order": 2, "title": STEP_STRAIN, "result": "passou",
+    steps.append({"order": 2, "title": step_title(STEP_STRAIN, p), "result": "passou",
                   "detail": f"Saídas {pct(o.saidas_sobre_entradas)} das entradas, sem cheque especial recente nem saque atípico"})
 
     if row.denied_at == STEP_CAPACITY:
-        steps.append({"order": 3, "title": STEP_CAPACITY, "result": "negou",
+        steps.append({"order": 3, "title": step_title(STEP_CAPACITY, p), "result": "negou",
                       "detail": f"Parcela do valor pedido consome {pct(o.parcela_sobre_renda_efetiva)} da renda efetiva "
                                 f"(limite {pct(p.max_commitment)})"})
         return steps
     if row.denied_at == STEP_LIMITS:
-        steps.append({"order": 3, "title": STEP_LIMITS, "result": "negou", "detail": f"Valor abaixo de {brl(p.min_amount)}"})
+        steps.append({"order": 5, "title": step_title(STEP_LIMITS, p), "result": "negou", "detail": f"Valor abaixo de {brl(p.min_amount)}"})
         return steps
     amount = row.approved_amount if row.decision == "APROVADO" else o.valor_base
     share = installment(amount, o.prazo_meses) / o.renda_efetiva
-    steps.append({"order": 3, "title": STEP_CAPACITY, "result": "ajustou" if row.reduced else "passou",
+    steps.append({"order": 3, "title": step_title(STEP_CAPACITY, p), "result": "ajustou" if row.reduced else "passou",
                   "detail": (f"Valor reduzido para {brl(amount)}: " if row.reduced else "")
                             + f"parcela de {pct(share)} da renda efetiva (limite {pct(p.max_commitment)})"})
 
     if row.denied_at == STEP_RISK:
-        steps.append({"order": 4, "title": STEP_RISK, "result": "negou",
+        steps.append({"order": 4, "title": step_title(STEP_RISK, p), "result": "negou",
                       "detail": f"Chance de calote de {pct(row.default_risk)}, acima do limite de {pct(row.risk_cutoff_used)}"})
         return steps
-    steps.append({"order": 4, "title": STEP_RISK, "result": "passou",
+    steps.append({"order": 4, "title": step_title(STEP_RISK, p), "result": "passou",
                   "detail": f"Chance de calote de {pct(row.default_risk)}, dentro do limite de {pct(row.risk_cutoff_used)}"})
-    steps.append({"order": 5, "title": STEP_LIMITS, "result": "passou",
+    steps.append({"order": 5, "title": step_title(STEP_LIMITS, p), "result": "passou",
                   "detail": f"{brl(row.approved_amount)} entre {brl(p.min_amount)} e o menor entre o pedido e R$ 30.000"})
     return steps
 
 
 def reasons(o: pd.Series) -> list[str]:
     """Facts about the order that the analyst can check, strongest signals first."""
-    pct = lambda value: f"{value * 100:.0f}%"
     facts = []
     if o.bureau_ausente:
         return ["Sem dados do bureau: decisão conservadora"]
