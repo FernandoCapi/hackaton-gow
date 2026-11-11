@@ -513,6 +513,42 @@
         ],
         "title": "BureauInfo"
       },
+      "Counteroffer": {
+        "properties": {
+          "amount": {
+            "type": "number",
+            "title": "Amount"
+          },
+          "installment": {
+            "type": "number",
+            "title": "Installment"
+          },
+          "default_risk": {
+            "type": "number",
+            "title": "Default Risk"
+          },
+          "expected_profit": {
+            "type": "number",
+            "title": "Expected Profit"
+          },
+          "share_of_request": {
+            "type": "number",
+            "title": "Share Of Request",
+            "description": "amount / valor pedido"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "amount",
+          "installment",
+          "default_risk",
+          "expected_profit",
+          "share_of_request"
+        ],
+        "title": "Counteroffer",
+        "description": "EXTRA, fora do arquivo oficial: valor menor que a política aprovaria para um pedido negado."
+      },
       "DecisionStep": {
         "properties": {
           "order": {
@@ -887,6 +923,17 @@
             },
             "type": "array",
             "title": "Steps"
+          },
+          "counteroffer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Counteroffer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "EXTRA: só para negados por capacidade ou risco; não entra no selic_final.csv"
           }
         },
         "additionalProperties": false,
@@ -1738,6 +1785,18 @@
           },
           "model": {
             "$ref": "#/components/schemas/ModelQuality"
+          },
+          "counteroffers": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Counteroffers",
+            "description": "EXTRA: pedidos negados por capacidade ou risco que teriam aprovação com um valor menor"
           }
         },
         "additionalProperties": false,

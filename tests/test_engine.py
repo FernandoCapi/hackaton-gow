@@ -104,3 +104,18 @@ def test_proposed_policy_beats_current_on_history(engine):
     result = engine.simulate(PolicyParams(), with_steps=False)
     assert result.historical.gain > 0
     assert result.new_orders.expected_gain > 0
+
+
+def test_counteroffers_only_for_capacity_or_risk_and_never_in_official_file(engine, monkeypatch):
+    from src import service
+
+    monkeypatch.setattr(service, "engine", lambda: engine)
+    service._decisions.cache_clear()
+    official = service._current_decisions()
+    offers = service._counteroffers()
+    assert len(offers) > 0
+    assert official.loc[offers.index, "decision"].eq("NEGADO").all()  # the official file keeps them denied
+    assert official.loc[offers.index, "denied_at"].isin(service.COUNTEROFFER_STEPS).all()
+    requested = engine.new_grid.orders.loc[offers.index, "valor_solicitado"]
+    assert (offers.approved_amount <= requested + 0.005).all() and (offers.approved_amount >= 500).all()
+    service._decisions.cache_clear()

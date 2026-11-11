@@ -79,6 +79,9 @@ class Summary(Model):
     proposed_policy: ResultBlock
     gain: Money = Field(description="proposed_policy.expected_result - current_policy.expected_result")
     model: ModelQuality
+    counteroffers: int | None = Field(
+        None, description="EXTRA: pedidos negados por capacidade ou risco que teriam aprovação com um valor menor"
+    )
 
 
 # --- patterns -------------------------------------------------------------------------
@@ -287,6 +290,16 @@ class DecisionStep(Model):
     detail: str
 
 
+class Counteroffer(Model):
+    """EXTRA, fora do arquivo oficial: valor menor que a política aprovaria para um pedido negado."""
+
+    amount: Money
+    installment: Money
+    default_risk: Rate
+    expected_profit: Money
+    share_of_request: Rate = Field(description="amount / valor pedido")
+
+
 class OrderDetail(OrderSummary):
     employment_type: str
     income_declared: Money
@@ -296,6 +309,9 @@ class OrderDetail(OrderSummary):
     account: AccountInfo
     reasons: list[str]
     steps: list[DecisionStep]
+    counteroffer: Counteroffer | None = Field(
+        None, description="EXTRA: só para negados por capacidade ou risco; não entra no selic_final.csv"
+    )
 
 
 class OrderPage(Page[OrderSummary]):

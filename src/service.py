@@ -17,6 +17,7 @@ from src.schemas import (
     AccountInfo,
     ApproveRequest,
     BureauInfo,
+    Counteroffer,
     DecisionStep,
     Health,
     ModelQuality,
@@ -94,6 +95,21 @@ def _current_decisions() -> pd.DataFrame:
     return _decisions(current_policy().params.model_dump_json())
 
 
+COUNTEROFFER_STEPS = ("Capacidade de pagamento", "Risco estimado pela IA")
+
+
+def _counteroffers() -> pd.DataFrame:
+    """EXTRA, outside the official file: for orders denied only for capacity or risk, the
+    smaller amount the same policy would approve (same filters and cutoffs, amounts from
+    100% down to 30% of the request). Orders denied by the evidence or strain filters get
+    no offer: a smaller amount does not fix those."""
+    params = current_policy().params
+    decisions = _current_decisions()
+    reduced = _decisions(params.model_copy(update={"amount_rule": "maximize_expected_profit"}).model_dump_json())
+    eligible = decisions.denied_at.isin(COUNTEROFFER_STEPS) & reduced.decision.eq("APROVADO")
+    return reduced[eligible]
+
+
 # --- health ---------------------------------------------------------------------------
 
 
@@ -143,6 +159,7 @@ def summary() -> Summary:
             trained_until=e.metrics["trained_until"],
             validated_on=f"pedidos de {validation['test_period']} (nunca vistos no treino)",
         ),
+        counteroffers=int(len(_counteroffers())),
     )
 
 
@@ -366,6 +383,24 @@ def _live_detail(order_id: str) -> OrderDetail:
         ),
         reasons=reasons(o),
         steps=[DecisionStep(**step) for step in decision_steps(row, o, params)],
+        counteroffer=_counteroffer_for(order_id, o),
+    )
+
+
+def _counteroffer_for(order_id: str, o: pd.Series) -> Counteroffer | None:
+    from src.features import installment
+
+    offers = _counteroffers()
+    if order_id not in offers.index:
+        return None
+    offer = offers.loc[order_id]
+    amount = float(offer.approved_amount)
+    return Counteroffer(
+        amount=round(amount, 2),
+        installment=round(float(installment(amount, o.prazo_meses)), 2),
+        default_risk=round(float(offer.default_risk), 4),
+        expected_profit=round(float(offer.expected_profit), 2),
+        share_of_request=round(amount / float(o.valor_solicitado), 4),
     )
 
 
