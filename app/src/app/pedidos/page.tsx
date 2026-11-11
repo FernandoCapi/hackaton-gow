@@ -4,7 +4,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { ChevronRight, Download, ListChecks, SlidersHorizontal, X } from "lucide-react";
 import Link from "next/link";
 import { useRef, useState } from "react";
-import { api, type OrderQuery } from "@/lib/api";
+import { api, decisionsCsvUrl, type OrderQuery } from "@/lib/api";
 import { brl, date, int, pct } from "@/lib/format";
 import { Card, DecisionBadge, RiskMeter, Section, Status } from "@/components/ui";
 
@@ -30,6 +30,7 @@ export default function OrdersPage() {
   const csvIsExample = health.data?.sections.decisions_csv !== "live";
   const active = [query.decision !== undefined, query.changed !== undefined, !!query.q, query.sort !== DEFAULT_QUERY.sort].filter(Boolean).length;
   const filtered = active > 0;
+  const filteredCsv = query.decision !== undefined || query.changed !== undefined || !!query.q;
   const dialog = useRef<HTMLDialogElement>(null);
   const [draft, setDraft] = useState<OrderQuery>(DEFAULT_QUERY);
   const openFilters = () => {
@@ -103,15 +104,15 @@ export default function OrdersPage() {
             </div>
           </form>
         </dialog>
-        {/* Full official file (all 2,000 orders), ignores the filters above. The example CSV has only a
-            handful of orders: never let it be sent as the official file. */}
+        {/* Follows the filters (decision, changed, search). Without filters it is the full official file
+            (all 2,000 orders); with filters the API names it selic_filtrado.csv so it is never sent by mistake. */}
         <div className="ml-auto text-right">
           {csvIsExample ? (
             <button disabled title="Disponível quando o motor gerar as decisões reais" className="rounded-md border border-border px-3 py-1.5 text-sm text-muted">
               Baixar selic_final.csv
             </button>
           ) : (
-            <a href="/api/decisions.csv" download className="inline-flex items-center gap-2 rounded-lg bg-accent px-3 py-2 text-sm font-medium text-on-solid shadow-sm hover:bg-accent-strong"><Download className="size-4" aria-hidden />Baixar selic_final.csv</a>
+            <a href={decisionsCsvUrl(query)} download className="inline-flex items-center gap-2 rounded-lg bg-accent px-3 py-2 text-sm font-medium text-on-solid shadow-sm hover:bg-accent-strong"><Download className="size-4" aria-hidden />{filteredCsv ? "Baixar CSV filtrado" : "Baixar selic_final.csv"}</a>
           )}
           {csvIsExample && <p className="mt-1 text-xs text-muted">Arquivo de exemplo: não enviar.</p>}
         </div>

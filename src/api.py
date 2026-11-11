@@ -133,10 +133,16 @@ def get_order(order_id: str):
     responses={200: {"content": {"text/csv": {}}, "description": "Arquivo de decisões no formato oficial"}},
     tags=["pedidos"],
 )
-def get_decisions_csv():
-    filename = f"{config.TEAM_ID}_final.csv"
+def get_decisions_csv(
+    decision: Decision | None = None,
+    changed: Annotated[bool | None, Query(description="Só pedidos em que a decisão difere da política atual")] = None,
+    q: Annotated[str | None, Query(description="Busca por id do pedido ou do cliente")] = None,
+):
+    filtered = decision is not None or changed is not None or bool(q)
+    # a filtered file must never be mistaken for the official one
+    filename = f"{config.TEAM_ID}_{'filtrado' if filtered else 'final'}.csv"
     return PlainTextResponse(
-        service.decisions_csv(),
+        service.decisions_csv(decision, changed, q),
         media_type="text/csv; charset=utf-8",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )

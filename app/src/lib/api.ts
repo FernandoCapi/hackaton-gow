@@ -66,3 +66,7 @@ export const api = {
   orders: (query: OrderQuery) => request<OrderPage>(`orders${queryString(query)}`),
   order: (id: string) => request<OrderDetail>(`orders/${encodeURIComponent(id)}`),
 };
+
+// Download link for the decisions file with the list's filters (sort and paging do not apply).
+export const decisionsCsvUrl = ({ decision, changed, q }: OrderQuery) =>
+  `/api/decisions.csv${queryString({ decision, changed, q })}`;

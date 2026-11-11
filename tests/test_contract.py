@@ -109,6 +109,15 @@ def test_decisions_csv_follows_official_format(client):
         assert (float(amount) > 0) == (decision == "APROVADO")
 
 
+def test_decisions_csv_follows_the_panel_filters(client):
+    listed = client.get("/v1/orders", params={"decision": "APROVADO", "page_size": 200}).json()
+    response = client.get("/v1/decisions.csv", params={"decision": "APROVADO"})
+    rows = list(csv.reader(io.StringIO(response.text)))[1:]
+    assert sorted(r[0] for r in rows) == sorted(o["order_id"] for o in listed["items"])
+    assert all(r[1] == "APROVADO" for r in rows)
+    assert "selic_filtrado.csv" in response.headers["content-disposition"]
+
+
 def test_committed_openapi_is_up_to_date():
     assert api.OPENAPI_FILE.read_text(encoding="utf-8") == api.openapi_text(), (
         "Contrato mudou: rode `python -m src.api --export-openapi` e commite contracts/openapi.json"

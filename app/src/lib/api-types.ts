@@ -275,6 +275,11 @@ export interface components {
             /** Passes */
             passes?: boolean | null;
         };
+        /** HTTPValidationError */
+        HTTPValidationError: {
+            /** Detail */
+            detail?: components["schemas"]["ValidationError"][];
+        };
         /** Health */
         Health: {
             /**
@@ -816,6 +821,19 @@ export interface components {
              */
             counteroffers?: number | null;
         };
+        /** ValidationError */
+        ValidationError: {
+            /** Location */
+            loc: (string | number)[];
+            /** Message */
+            msg: string;
+            /** Error Type */
+            type: string;
+            /** Input */
+            input?: unknown;
+            /** Context */
+            ctx?: Record<string, never>;
+        };
     };
     responses: never;
     parameters: never;
@@ -1078,7 +1096,13 @@ export interface operations {
     };
     get_decisions_csv_v1_decisions_csv_get: {
         parameters: {
-            query?: never;
+            query?: {
+                decision?: ("APROVADO" | "NEGADO") | null;
+                /** @description Só pedidos em que a decisão difere da política atual */
+                changed?: boolean | null;
+                /** @description Busca por id do pedido ou do cliente */
+                q?: string | null;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -1093,6 +1117,15 @@ export interface operations {
                 content: {
                     "text/plain": string;
                     "text/csv": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

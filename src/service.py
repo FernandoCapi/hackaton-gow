@@ -552,14 +552,18 @@ def get_order(order_id: str) -> OrderDetail:
     raise OrderNotFound(order_id)
 
 
-def decisions_csv() -> str:
-    """Official file format, from the same engine that generates selic_final.csv."""
+def decisions_csv(decision: str | None = None, changed: bool | None = None, q: str | None = None) -> str:
+    """Official file format, from the same engine that generates selic_final.csv. With filters,
+    only the orders the panel list shows for them (same filtering as list_orders)."""
     from src.decide import csv_text
 
     if is_live():
-        return csv_text(_current_decisions())
-    frame = pd.DataFrame(
-        [{"decision": r.decision, "approved_amount": r.approved_amount} for r in _orders_fixture()],
-        index=[r.order_id for r in _orders_fixture()],
-    )
+        frame = _current_decisions()
+    else:
+        frame = pd.DataFrame(
+            [{"decision": r.decision, "approved_amount": r.approved_amount} for r in _orders_fixture()],
+            index=[r.order_id for r in _orders_fixture()],
+        )
+    if decision or changed is not None or q:
+        frame = frame.loc[[row.order_id for row in list_orders(decision, changed, q, page_size=len(frame)).items]]
     return csv_text(frame)
