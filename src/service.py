@@ -100,7 +100,6 @@ def _current_decisions() -> pd.DataFrame:
 def health() -> Health:
     mode: SectionMode = "live" if is_live() else "fixtures"
     sections: dict[str, SectionMode] = {name: mode for name in SECTION_NAMES}
-    sections["patterns"] = "fixtures"  # patterns still come from the consolidated analysis
     model_version = None
     if mode == "live":
         model_version = f"lightgbm-calote-{engine().metrics['trained_until']}"
@@ -147,7 +146,17 @@ def summary() -> Summary:
     )
 
 
+@lru_cache(maxsize=1)
+def _live_patterns() -> tuple[Pattern, ...]:
+    from src.patterns import compute_patterns
+
+    return tuple(compute_patterns(engine().orders))
+
+
 def patterns() -> list[Pattern]:
+    """Patterns computed from the data (src/patterns.py), same definitions as the policy."""
+    if is_live():
+        return list(_live_patterns())
     return [Pattern.model_validate(item) for item in _fixture("patterns")]
 
 

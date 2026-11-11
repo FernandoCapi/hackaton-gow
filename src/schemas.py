@@ -102,6 +102,17 @@ class Pattern(Model):
         description="Como a política atual trata esse grupo"
     )
     groups: list[PatternGroup] = Field(description="Barras do gráfico, já agregadas")
+    kind: Literal["risk", "opportunity", "trap"] | None = Field(
+        None,
+        description="risk: a atual aprova e perde; opportunity: a atual nega quem pagaria; "
+        "trap: parece perigoso, mas não é",
+    )
+    new_orders_affected: int | None = Field(None, description="Quantos dos 2.000 pedidos novos caem no grupo")
+    policy_step: str | None = Field(None, description="Passo da política proposta que usa este padrão")
+    evidence: Literal["historico_maduro", "piloto"] | None = Field(
+        None, description="historico_maduro: contratos com 12+ meses; piloto: sorteado, calote ainda parcial"
+    )
+    caveat: str | None = Field(None, description="Ressalva para o analista (amostra pequena, base de comparação)")
 
 
 # --- policy ---------------------------------------------------------------------------

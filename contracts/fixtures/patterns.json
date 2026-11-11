@@ -1,46 +1,492 @@
 [
   {
-    "id": "salary_below_declared",
-    "sentence": "Clientes cujo salário que entra na conta é menos da metade da renda declarada têm inadimplência de 31%, contra 14% da média. Afeta 640 clientes.",
-    "group_description": "Salário na conta < 50% da renda declarada",
-    "group_default_rate": 0.31,
-    "overall_default_rate": 0.141,
-    "customers_affected": 640,
+    "id": "outflow_over_inflow",
+    "sentence": "Clientes com saídas acima de 90% do que entra na conta têm inadimplência de 91%, contra 13,7% da média. Afeta 67 clientes.",
+    "group_description": "Saídas acima de 90% do que entra na conta",
+    "group_default_rate": 0.9104,
+    "overall_default_rate": 0.137,
+    "customers_affected": 67,
     "direction": "worse",
     "current_policy_view": "approves",
     "groups": [
-      { "label": "< 50%", "default_rate": 0.31, "customers": 640 },
-      { "label": "50–90%", "default_rate": 0.16, "customers": 1210 },
-      { "label": "≥ 90%", "default_rate": 0.08, "customers": 2446 }
-    ]
+      {
+        "label": "até 50%",
+        "default_rate": 0.1183,
+        "customers": 2765
+      },
+      {
+        "label": "acima de 90%",
+        "default_rate": 0.9104,
+        "customers": 67
+      }
+    ],
+    "kind": "risk",
+    "new_orders_affected": 97,
+    "policy_step": "Sinais de aperto na conta",
+    "evidence": "historico_maduro",
+    "caveat": null
   },
   {
-    "id": "overdraft_heavy",
-    "sentence": "Clientes que passaram mais de 30 dias no cheque especial nos últimos 12 meses têm inadimplência de 27%, contra 14% da média. Afeta 910 clientes.",
-    "group_description": "Mais de 30 dias de cheque especial em 12 meses",
-    "group_default_rate": 0.27,
-    "overall_default_rate": 0.141,
-    "customers_affected": 910,
+    "id": "recent_overdraft",
+    "sentence": "Clientes com cheque especial em 2 ou mais dos 3 meses antes do pedido têm inadimplência de 91%, contra 13,7% da média. Afeta 56 clientes.",
+    "group_description": "Cheque especial em 2 ou mais dos 3 meses antes do pedido",
+    "group_default_rate": 0.9107,
+    "overall_default_rate": 0.137,
+    "customers_affected": 56,
     "direction": "worse",
-    "current_policy_view": "mixed",
+    "current_policy_view": "approves",
     "groups": [
-      { "label": "0 dias", "default_rate": 0.07, "customers": 1980 },
-      { "label": "1–30 dias", "default_rate": 0.13, "customers": 1406 },
-      { "label": "> 30 dias", "default_rate": 0.27, "customers": 910 }
-    ]
+      {
+        "label": "0 meses",
+        "default_rate": 0.1174,
+        "customers": 2752
+      },
+      {
+        "label": "1 mês",
+        "default_rate": 0.5833,
+        "customers": 24
+      },
+      {
+        "label": "2 meses",
+        "default_rate": 0.8929,
+        "customers": 28
+      },
+      {
+        "label": "3 meses",
+        "default_rate": 0.9286,
+        "customers": 28
+      }
+    ],
+    "kind": "risk",
+    "new_orders_affected": 90,
+    "policy_step": "Sinais de aperto na conta",
+    "evidence": "historico_maduro",
+    "caveat": "Conta só os 3 meses antes do pedido: o cheque especial do mês mais antigo do extrato é artefato dos dados."
   },
   {
-    "id": "low_score_stable_salary",
-    "sentence": "Clientes com score entre 500 e 600, mas salário estável na conta há 12 meses, têm inadimplência de 9%, contra 14% da média. Afeta 210 clientes.",
-    "group_description": "Score 500–600 com 12 meses de salário regular",
-    "group_default_rate": 0.09,
-    "overall_default_rate": 0.141,
-    "customers_affected": 210,
+    "id": "account_drain",
+    "sentence": "Clientes com a conta esvaziada antes do pedido (uma saída 3 vezes maior que a típica) têm inadimplência de 87%, contra 13,7% da média. Afeta 70 clientes.",
+    "group_description": "A conta esvaziada antes do pedido (uma saída 3 vezes maior que a típica)",
+    "group_default_rate": 0.8714,
+    "overall_default_rate": 0.137,
+    "customers_affected": 70,
+    "direction": "worse",
+    "current_policy_view": "approves",
+    "groups": [
+      {
+        "label": "saída típica",
+        "default_rate": 0.1158,
+        "customers": 2720
+      },
+      {
+        "label": "2 a 3 vezes",
+        "default_rate": 0.2857,
+        "customers": 42
+      },
+      {
+        "label": "3 vezes ou mais",
+        "default_rate": 0.8714,
+        "customers": 70
+      }
+    ],
+    "kind": "risk",
+    "new_orders_affected": 100,
+    "policy_step": "Sinais de aperto na conta",
+    "evidence": "historico_maduro",
+    "caveat": null
+  },
+  {
+    "id": "credit_seeking",
+    "sentence": "Clientes com 8 ou mais consultas ao CPF em 90 dias têm inadimplência de 91%, contra 13,7% da média. Afeta 22 clientes.",
+    "group_description": "8 ou mais consultas ao CPF em 90 dias",
+    "group_default_rate": 0.9091,
+    "overall_default_rate": 0.137,
+    "customers_affected": 22,
+    "direction": "worse",
+    "current_policy_view": "approves",
+    "groups": [
+      {
+        "label": "0 a 3",
+        "default_rate": 0.1242,
+        "customers": 2576
+      },
+      {
+        "label": "4 a 7",
+        "default_rate": 0.2051,
+        "customers": 234
+      },
+      {
+        "label": "8 ou mais",
+        "default_rate": 0.9091,
+        "customers": 22
+      }
+    ],
+    "kind": "risk",
+    "new_orders_affected": 38,
+    "policy_step": "Sinais de aperto na conta",
+    "evidence": "historico_maduro",
+    "caveat": "Amostra pequena (22 contratos): usar como sinal, não como prova."
+  },
+  {
+    "id": "inflated_income",
+    "sentence": "Clientes com entradas na conta abaixo de 60% da renda declarada têm inadimplência de 71%, contra 13,7% da média. Afeta 14 clientes.",
+    "group_description": "Entradas na conta abaixo de 60% da renda declarada",
+    "group_default_rate": 0.7143,
+    "overall_default_rate": 0.137,
+    "customers_affected": 14,
+    "direction": "worse",
+    "current_policy_view": "approves",
+    "groups": [
+      {
+        "label": "abaixo de 60%",
+        "default_rate": 0.7143,
+        "customers": 14
+      },
+      {
+        "label": "60–80%",
+        "default_rate": 0.1756,
+        "customers": 205
+      },
+      {
+        "label": "80% ou mais",
+        "default_rate": 0.1309,
+        "customers": 2613
+      }
+    ],
+    "kind": "risk",
+    "new_orders_affected": 74,
+    "policy_step": "Sinais de aperto na conta",
+    "evidence": "historico_maduro",
+    "caveat": "Amostra pequena (14 contratos): usar como sinal, não como prova. Usa o total de entradas, não o salário: autônomos e empresários quase não recebem \"salário\" na conta."
+  },
+  {
+    "id": "installment_over_slack",
+    "sentence": "Clientes com parcela acima de 45% da sobra do mês (entradas menos saídas) têm inadimplência de 65%, contra 13,7% da média. Afeta 265 clientes.",
+    "group_description": "Parcela acima de 45% da sobra do mês (entradas menos saídas)",
+    "group_default_rate": 0.6453,
+    "overall_default_rate": 0.137,
+    "customers_affected": 265,
+    "direction": "worse",
+    "current_policy_view": "approves",
+    "groups": [
+      {
+        "label": "até 25%",
+        "default_rate": 0.0802,
+        "customers": 2206
+      },
+      {
+        "label": "25–45%",
+        "default_rate": 0.1108,
+        "customers": 361
+      },
+      {
+        "label": "acima de 45%",
+        "default_rate": 0.6453,
+        "customers": 265
+      }
+    ],
+    "kind": "risk",
+    "new_orders_affected": 245,
+    "policy_step": "Risco estimado pela IA",
+    "evidence": "historico_maduro",
+    "caveat": "Medido no valor pedido. É o sinal mais forte do modelo de risco."
+  },
+  {
+    "id": "amount_cut_by_30pct_rule",
+    "sentence": "Clientes com pedido acima da capacidade, aprovado com valor cortado pela regra dos 30% têm inadimplência de 56%, contra 13,7% da média. Afeta 177 clientes.",
+    "group_description": "Pedido acima da capacidade, aprovado com valor cortado pela regra dos 30%",
+    "group_default_rate": 0.5593,
+    "overall_default_rate": 0.137,
+    "customers_affected": 177,
+    "direction": "worse",
+    "current_policy_view": "approves",
+    "groups": [
+      {
+        "label": "valor cortado",
+        "default_rate": 0.5593,
+        "customers": 177
+      },
+      {
+        "label": "valor pedido",
+        "default_rate": 0.1089,
+        "customers": 2655
+      }
+    ],
+    "kind": "risk",
+    "new_orders_affected": 61,
+    "policy_step": "Capacidade de pagamento",
+    "evidence": "historico_maduro",
+    "caveat": "Cortar não resolve: o corte deixa a parcela em exatos 30% da renda. Pedir acima da capacidade já é sinal de aperto."
+  },
+  {
+    "id": "total_debt_burden",
+    "sentence": "Clientes com nossa parcela somada às dívidas em outras instituições acima de 44% da renda têm inadimplência de 34%, contra 13,7% da média. Afeta 391 clientes.",
+    "group_description": "Nossa parcela somada às dívidas em outras instituições acima de 44% da renda",
+    "group_default_rate": 0.335,
+    "overall_default_rate": 0.137,
+    "customers_affected": 391,
+    "direction": "worse",
+    "current_policy_view": "approves",
+    "groups": [
+      {
+        "label": "até 30%",
+        "default_rate": 0.0972,
+        "customers": 1883
+      },
+      {
+        "label": "30–44%",
+        "default_rate": 0.1326,
+        "customers": 558
+      },
+      {
+        "label": "acima de 44%",
+        "default_rate": 0.335,
+        "customers": 391
+      }
+    ],
+    "kind": "risk",
+    "new_orders_affected": 323,
+    "policy_step": "Risco estimado pela IA",
+    "evidence": "historico_maduro",
+    "caveat": null
+  },
+  {
+    "id": "new_account",
+    "sentence": "Clientes com conta aberta há até 3 meses têm inadimplência de 20%, contra 13,7% da média. Afeta 83 clientes.",
+    "group_description": "Conta aberta há até 3 meses",
+    "group_default_rate": 0.2048,
+    "overall_default_rate": 0.137,
+    "customers_affected": 83,
+    "direction": "worse",
+    "current_policy_view": "approves",
+    "groups": [
+      {
+        "label": "até 3 meses",
+        "default_rate": 0.2048,
+        "customers": 83
+      },
+      {
+        "label": "4 a 6 meses",
+        "default_rate": 0.0706,
+        "customers": 85
+      },
+      {
+        "label": "mais de 6 meses",
+        "default_rate": 0.137,
+        "customers": 2664
+      }
+    ],
+    "kind": "risk",
+    "new_orders_affected": 113,
+    "policy_step": "Risco estimado pela IA",
+    "evidence": "historico_maduro",
+    "caveat": null
+  },
+  {
+    "id": "active_restriction",
+    "sentence": "Clientes com restrição ativa no bureau têm inadimplência de 20%, contra 10,2% de quem não tem restrição. Afeta 127 clientes.",
+    "group_description": "Restrição ativa no bureau",
+    "group_default_rate": 0.2047,
+    "overall_default_rate": 0.1021,
+    "customers_affected": 127,
+    "direction": "worse",
+    "current_policy_view": "denies",
+    "groups": [
+      {
+        "label": "sem restrição",
+        "default_rate": 0.1021,
+        "customers": 999
+      },
+      {
+        "label": "1 restrição",
+        "default_rate": 0.2047,
+        "customers": 127
+      }
+    ],
+    "kind": "risk",
+    "new_orders_affected": 377,
+    "policy_step": "Fora do que o piloto testou",
+    "evidence": "piloto",
+    "caveat": "Piloto sorteado com contratos de 6 a 12 meses: o calote ainda é parcial; a comparação é com clientes do piloto da mesma época. Aqui a regra atual acerta: manter a negativa."
+  },
+  {
+    "id": "denied_with_healthy_account",
+    "sentence": "Clientes que a política atual negaria, mas com conta saudável (sem cheque especial recente, sem conta esvaziada, gastos até 90% das entradas e parcela até 25% da sobra) têm inadimplência de 5,3%, contra 9,7% de quem a política atual aprovaria. Afeta 318 clientes.",
+    "group_description": "A política atual negaria, mas com conta saudável (sem cheque especial recente, sem conta esvaziada, gastos até 90% das entradas e parcela até 25% da sobra)",
+    "group_default_rate": 0.0535,
+    "overall_default_rate": 0.0973,
+    "customers_affected": 318,
     "direction": "better",
     "current_policy_view": "denies",
     "groups": [
-      { "label": "Score 500–600, salário regular", "default_rate": 0.09, "customers": 210 },
-      { "label": "Score 500–600, salário irregular", "default_rate": 0.29, "customers": 185 }
-    ]
+      {
+        "label": "atual negaria, conta saudável",
+        "default_rate": 0.0535,
+        "customers": 318
+      },
+      {
+        "label": "atual negaria, conta com aperto",
+        "default_rate": 0.3945,
+        "customers": 109
+      },
+      {
+        "label": "atual aprovaria",
+        "default_rate": 0.0973,
+        "customers": 699
+      }
+    ],
+    "kind": "opportunity",
+    "new_orders_affected": 614,
+    "policy_step": "Risco estimado pela IA",
+    "evidence": "piloto",
+    "caveat": "Piloto sorteado com contratos de 6 a 12 meses: o calote ainda é parcial; a comparação é com clientes do piloto da mesma época."
+  },
+  {
+    "id": "score_does_not_predict",
+    "sentence": "Clientes com score do bureau até 600, sem restrição e renda acima de R$ 2.000 (negados hoje só pelo score) têm inadimplência de 10,9%, contra 9,7% dos que têm score acima de 600. Afeta 238 clientes.",
+    "group_description": "Score do bureau até 600, sem restrição e renda acima de R$ 2.000 (negados hoje só pelo score)",
+    "group_default_rate": 0.1092,
+    "overall_default_rate": 0.0973,
+    "customers_affected": 238,
+    "direction": "worse",
+    "current_policy_view": "denies",
+    "groups": [
+      {
+        "label": "score 601–650 (maduros)",
+        "default_rate": 0.16,
+        "customers": 225
+      },
+      {
+        "label": "score 651–700 (maduros)",
+        "default_rate": 0.1198,
+        "customers": 359
+      },
+      {
+        "label": "score 701–750 (maduros)",
+        "default_rate": 0.14,
+        "customers": 543
+      },
+      {
+        "label": "score 751–800 (maduros)",
+        "default_rate": 0.1286,
+        "customers": 583
+      },
+      {
+        "label": "score 801–850 (maduros)",
+        "default_rate": 0.1423,
+        "customers": 499
+      },
+      {
+        "label": "score 851–1000 (maduros)",
+        "default_rate": 0.1396,
+        "customers": 623
+      }
+    ],
+    "kind": "opportunity",
+    "new_orders_affected": 338,
+    "policy_step": "Fora do que o piloto testou",
+    "evidence": "piloto",
+    "caveat": "Piloto sorteado com contratos de 6 a 12 meses: o calote ainda é parcial; a comparação é com clientes do piloto da mesma época. O gráfico mostra os contratos maduros: todas as faixas de score ficam entre 12% e 16% de calote, o score não separa bom de mau pagador. No piloto, os negados só pelo score ficam abaixo do ponto de equilíbrio (~17%): negar por score descarta clientes que dão lucro."
+  },
+  {
+    "id": "income_1500_2000",
+    "sentence": "Clientes com renda declarada entre R$ 1.500 e R$ 2.000 têm inadimplência de 12,9%, contra 11,3% de quem declara mais de R$ 2.000. Afeta 70 clientes.",
+    "group_description": "Renda declarada entre R$ 1.500 e R$ 2.000",
+    "group_default_rate": 0.1286,
+    "overall_default_rate": 0.1127,
+    "customers_affected": 70,
+    "direction": "worse",
+    "current_policy_view": "denies",
+    "groups": [
+      {
+        "label": "R$ 1.500–2.000",
+        "default_rate": 0.1286,
+        "customers": 70
+      },
+      {
+        "label": "acima de R$ 2.000",
+        "default_rate": 0.1127,
+        "customers": 1056
+      }
+    ],
+    "kind": "opportunity",
+    "new_orders_affected": 120,
+    "policy_step": "Fora do que o piloto testou",
+    "evidence": "piloto",
+    "caveat": "Piloto sorteado com contratos de 6 a 12 meses: o calote ainda é parcial; a comparação é com clientes do piloto da mesma época. Um pouco acima de quem ganha mais, mas abaixo do ponto de equilíbrio (~17%): o corte em R$ 2.000 nega clientes que dão lucro. A política proposta decide pelo risco, não pela renda."
+  },
+  {
+    "id": "long_term",
+    "sentence": "Clientes com prazo de 36 meses têm inadimplência de 8,3%, contra 13,7% da média. Afeta 726 clientes.",
+    "group_description": "Prazo de 36 meses",
+    "group_default_rate": 0.0826,
+    "overall_default_rate": 0.137,
+    "customers_affected": 726,
+    "direction": "better",
+    "current_policy_view": "approves",
+    "groups": [
+      {
+        "label": "6 meses",
+        "default_rate": 0.2405,
+        "customers": 158
+      },
+      {
+        "label": "12 meses",
+        "default_rate": 0.1718,
+        "customers": 617
+      },
+      {
+        "label": "18 meses",
+        "default_rate": 0.1211,
+        "customers": 545
+      },
+      {
+        "label": "24 meses",
+        "default_rate": 0.1501,
+        "customers": 786
+      },
+      {
+        "label": "36 meses",
+        "default_rate": 0.0826,
+        "customers": 726
+      }
+    ],
+    "kind": "opportunity",
+    "new_orders_affected": 524,
+    "policy_step": "Risco estimado pela IA",
+    "evidence": "historico_maduro",
+    "caveat": "Não é só a parcela menor: com a parcela até 20% da renda, 36 meses ainda têm menos calote que prazos de até 12 meses. O modelo de risco usa o prazo."
+  },
+  {
+    "id": "large_amount",
+    "sentence": "Pedidos acima de R$ 20 mil parecem arriscados: inadimplência de 22%, contra 13,7% da média. Mas com parcela de até 20% da renda o calote cai para 9,7% (72 clientes). O que pesa é a parcela, não o valor.",
+    "group_description": "Pedidos acima de R$ 20 mil",
+    "group_default_rate": 0.2248,
+    "overall_default_rate": 0.137,
+    "customers_affected": 129,
+    "direction": "worse",
+    "current_policy_view": "approves",
+    "groups": [
+      {
+        "label": "acima de R$ 20 mil",
+        "default_rate": 0.2248,
+        "customers": 129
+      },
+      {
+        "label": "acima de R$ 20 mil, parcela até 20%",
+        "default_rate": 0.0972,
+        "customers": 72
+      },
+      {
+        "label": "até R$ 20 mil",
+        "default_rate": 0.1328,
+        "customers": 2703
+      }
+    ],
+    "kind": "trap",
+    "new_orders_affected": null,
+    "policy_step": "Capacidade de pagamento",
+    "evidence": "historico_maduro",
+    "caveat": null
   }
 ]

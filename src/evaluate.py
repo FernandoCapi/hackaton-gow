@@ -223,6 +223,29 @@ treinado só com contratos sem restrição e o piloto mostrou 19–23% de calote
 """
 
 
+def section_patterns(engine: Engine) -> str:
+    from src.patterns import compute_patterns
+
+    titles = {
+        "risk": "Onde a política atual aprova e perde dinheiro (ou onde ela acerta)",
+        "opportunity": "Onde a política atual nega quem pagaria",
+        "trap": "Parecem perigosos, mas não são",
+    }
+    patterns = compute_patterns(engine.orders)
+    blocks = []
+    for kind, title in titles.items():
+        lines = [f"**{title}**", ""]
+        for p in (p for p in patterns if p.kind == kind):
+            new = f" Pedidos novos no grupo: {num(p.new_orders_affected)}." if p.new_orders_affected is not None else ""
+            step = f" Passo da política: {p.policy_step}." if p.policy_step else ""
+            lines.append(f"- {p.sentence}{new}{step}")
+            if p.caveat:
+                lines.append(f"  - Ressalva: {p.caveat}")
+        blocks.append("\n".join(lines))
+    return "## 8. Padrões que o painel mostra\n\nOs mesmos que a API serve em `/v1/patterns`, calculados por `src/patterns.py` com as\n" \
+           "definições do motor. Base: contratos com 12+ meses, ou o piloto quando indicado.\n\n" + "\n\n".join(blocks) + "\n"
+
+
 def section_leakage() -> str:
     from src.features import MODEL_FEATURES
 
@@ -274,6 +297,7 @@ def main():
         section_amount_rule(engine),
         section_pilot(engine),
         section_leakage(),
+        section_patterns(engine),
     ]
     REPORT.write_text("\n".join(sections), encoding="utf-8", newline="\n")
     write_cases(engine, params)

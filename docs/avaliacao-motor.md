@@ -166,3 +166,42 @@ treinado só com contratos sem restrição e o piloto mostrou 19–23% de calote
   gênero, CEP, estado civil, idade e profissão (atributos sensíveis ou sem sinal).
 - Com o alvo embaralhado o modelo cai para ~0,5 (seção 2): não há atalho escondido nos dados.
 - Nenhuma variável sozinha passa de 0,76; a mais forte é a parcela sobre a sobra do mês.
+
+## 8. Padrões que o painel mostra
+
+Os mesmos que a API serve em `/v1/patterns`, calculados por `src/patterns.py` com as
+definições do motor. Base: contratos com 12+ meses, ou o piloto quando indicado.
+
+**Onde a política atual aprova e perde dinheiro (ou onde ela acerta)**
+
+- Clientes com saídas acima de 90% do que entra na conta têm inadimplência de 91%, contra 13,7% da média. Afeta 67 clientes. Pedidos novos no grupo: 97. Passo da política: Sinais de aperto na conta.
+- Clientes com cheque especial em 2 ou mais dos 3 meses antes do pedido têm inadimplência de 91%, contra 13,7% da média. Afeta 56 clientes. Pedidos novos no grupo: 90. Passo da política: Sinais de aperto na conta.
+  - Ressalva: Conta só os 3 meses antes do pedido: o cheque especial do mês mais antigo do extrato é artefato dos dados.
+- Clientes com a conta esvaziada antes do pedido (uma saída 3 vezes maior que a típica) têm inadimplência de 87%, contra 13,7% da média. Afeta 70 clientes. Pedidos novos no grupo: 100. Passo da política: Sinais de aperto na conta.
+- Clientes com 8 ou mais consultas ao CPF em 90 dias têm inadimplência de 91%, contra 13,7% da média. Afeta 22 clientes. Pedidos novos no grupo: 38. Passo da política: Sinais de aperto na conta.
+  - Ressalva: Amostra pequena (22 contratos): usar como sinal, não como prova.
+- Clientes com entradas na conta abaixo de 60% da renda declarada têm inadimplência de 71%, contra 13,7% da média. Afeta 14 clientes. Pedidos novos no grupo: 74. Passo da política: Sinais de aperto na conta.
+  - Ressalva: Amostra pequena (14 contratos): usar como sinal, não como prova. Usa o total de entradas, não o salário: autônomos e empresários quase não recebem "salário" na conta.
+- Clientes com parcela acima de 45% da sobra do mês (entradas menos saídas) têm inadimplência de 65%, contra 13,7% da média. Afeta 265 clientes. Pedidos novos no grupo: 245. Passo da política: Risco estimado pela IA.
+  - Ressalva: Medido no valor pedido. É o sinal mais forte do modelo de risco.
+- Clientes com pedido acima da capacidade, aprovado com valor cortado pela regra dos 30% têm inadimplência de 56%, contra 13,7% da média. Afeta 177 clientes. Pedidos novos no grupo: 61. Passo da política: Capacidade de pagamento.
+  - Ressalva: Cortar não resolve: o corte deixa a parcela em exatos 30% da renda. Pedir acima da capacidade já é sinal de aperto.
+- Clientes com nossa parcela somada às dívidas em outras instituições acima de 44% da renda têm inadimplência de 34%, contra 13,7% da média. Afeta 391 clientes. Pedidos novos no grupo: 323. Passo da política: Risco estimado pela IA.
+- Clientes com conta aberta há até 3 meses têm inadimplência de 20%, contra 13,7% da média. Afeta 83 clientes. Pedidos novos no grupo: 113. Passo da política: Risco estimado pela IA.
+- Clientes com restrição ativa no bureau têm inadimplência de 20%, contra 10,2% de quem não tem restrição. Afeta 127 clientes. Pedidos novos no grupo: 377. Passo da política: Fora do que o piloto testou.
+  - Ressalva: Piloto sorteado com contratos de 6 a 12 meses: o calote ainda é parcial; a comparação é com clientes do piloto da mesma época. Aqui a regra atual acerta: manter a negativa.
+
+**Onde a política atual nega quem pagaria**
+
+- Clientes que a política atual negaria, mas com conta saudável (sem cheque especial recente, sem conta esvaziada, gastos até 90% das entradas e parcela até 25% da sobra) têm inadimplência de 5,3%, contra 9,7% de quem a política atual aprovaria. Afeta 318 clientes. Pedidos novos no grupo: 614. Passo da política: Risco estimado pela IA.
+  - Ressalva: Piloto sorteado com contratos de 6 a 12 meses: o calote ainda é parcial; a comparação é com clientes do piloto da mesma época.
+- Clientes com score do bureau até 600, sem restrição e renda acima de R$ 2.000 (negados hoje só pelo score) têm inadimplência de 10,9%, contra 9,7% dos que têm score acima de 600. Afeta 238 clientes. Pedidos novos no grupo: 338. Passo da política: Fora do que o piloto testou.
+  - Ressalva: Piloto sorteado com contratos de 6 a 12 meses: o calote ainda é parcial; a comparação é com clientes do piloto da mesma época. O gráfico mostra os contratos maduros: todas as faixas de score ficam entre 12% e 16% de calote, o score não separa bom de mau pagador. No piloto, os negados só pelo score ficam abaixo do ponto de equilíbrio (~17%): negar por score descarta clientes que dão lucro.
+- Clientes com renda declarada entre R$ 1.500 e R$ 2.000 têm inadimplência de 12,9%, contra 11,3% de quem declara mais de R$ 2.000. Afeta 70 clientes. Pedidos novos no grupo: 120. Passo da política: Fora do que o piloto testou.
+  - Ressalva: Piloto sorteado com contratos de 6 a 12 meses: o calote ainda é parcial; a comparação é com clientes do piloto da mesma época. Um pouco acima de quem ganha mais, mas abaixo do ponto de equilíbrio (~17%): o corte em R$ 2.000 nega clientes que dão lucro. A política proposta decide pelo risco, não pela renda.
+- Clientes com prazo de 36 meses têm inadimplência de 8,3%, contra 13,7% da média. Afeta 726 clientes. Pedidos novos no grupo: 524. Passo da política: Risco estimado pela IA.
+  - Ressalva: Não é só a parcela menor: com a parcela até 20% da renda, 36 meses ainda têm menos calote que prazos de até 12 meses. O modelo de risco usa o prazo.
+
+**Parecem perigosos, mas não são**
+
+- Pedidos acima de R$ 20 mil parecem arriscados: inadimplência de 22%, contra 13,7% da média. Mas com parcela de até 20% da renda o calote cai para 9,7% (72 clientes). O que pesa é a parcela, não o valor. Passo da política: Capacidade de pagamento.

@@ -82,6 +82,24 @@ def test_generated_csv_passes_validation(engine, tmp_path):
     assert len(pd.read_csv(path)) == 2000
 
 
+def test_patterns_are_computed_from_data(engine):
+    import re
+
+    from src.patterns import compute_patterns
+
+    patterns = {p.id: p for p in compute_patterns(engine.orders)}
+    assert {p.kind for p in patterns.values()} == {"risk", "opportunity", "trap"}
+    for p in patterns.values():
+        assert p.customers_affected > 0 and p.groups
+        assert 0 <= p.group_default_rate <= 1 and 0 <= p.overall_default_rate <= 1
+        assert f"{p.customers_affected:,}".replace(",", ".") in p.sentence or p.kind == "trap"
+    outflow = patterns["outflow_over_inflow"]  # reference from analysis/findings_auditoria.md
+    assert (outflow.customers_affected, round(outflow.group_default_rate, 2)) == (67, 0.91)
+    assert outflow.new_orders_affected == 97
+    payload = "".join(p.model_dump_json() for p in patterns.values())
+    assert not re.search(r"\b[PC]-\d{5}\b", payload), "padroes nao podem expor ids de clientes"
+
+
 def test_proposed_policy_beats_current_on_history(engine):
     result = engine.simulate(PolicyParams(), with_steps=False)
     assert result.historical.gain > 0

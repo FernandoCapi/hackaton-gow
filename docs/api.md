@@ -32,7 +32,8 @@ Com o banco restaurado e o modelo treinado (`python -m src.risk_model`), as rota
 com o **motor real** (pedidos `P-xxxxx` de verdade). Sem isso, respondem com exemplos
 inventados (pedidos `P-99001` a `P-99006`); `ENGINE_MODE=fixtures` força os exemplos.
 `GET /v1/health` diz a origem de cada seção: `"sections": { "orders": "fixtures" | "live", ... }`.
-Hoje só `patterns` continua em exemplo. Quando uma seção vira `live`, o formato não muda.
+Com o motor no ar, todas as seções são `live` (inclusive `patterns`). Quando uma seção vira
+`live`, o formato não muda.
 
 A primeira chamada ao motor real leva ~2 s (carrega dados e modelo); depois, `/simulate`
 responde em ~0,35 s. Em modo de exemplo, `/simulate` só escala os números para os controles
@@ -83,6 +84,25 @@ Códigos de erro: `invalid_request` (422, parâmetro fora da faixa), `order_not_
 `not_found` (404, rota inexistente).
 
 ## Rotas
+
+### `GET /v1/patterns`
+
+Lista de padrões calculados dos dados (`src/patterns.py`), com as mesmas definições que a
+política usa. Cada item traz a frase pronta no formato do manual (`sentence`), as taxas do grupo e
+da base de comparação, quantos clientes afeta e as barras do gráfico (`groups[]`). Campos
+opcionais para organizar a Parte 1 do painel:
+
+| Campo | Valores | Uso no front |
+|---|---|---|
+| `kind` | `risk`, `opportunity`, `trap` | Separar em 3 blocos: "a atual aprova e perde", "a atual nega quem pagaria", "parece perigoso, mas não é" |
+| `new_orders_affected` | número ou `null` | "N pedidos novos têm esse perfil" |
+| `policy_step` | nome do passo ou `null` | Ligar o padrão ao passo da política (mesmos nomes de `PolicyStep.title`) |
+| `evidence` | `historico_maduro`, `piloto` | Selo da origem: contratos com 12+ meses ou piloto (calote ainda parcial) |
+| `caveat` | texto ou `null` | Ressalva para mostrar junto (amostra pequena, base de comparação) |
+
+`overall_default_rate` é a base de comparação citada na frase: a média dos contratos maduros, ou,
+nos padrões do piloto, o grupo de comparação da mesma época. Exemplo completo em
+`contracts/fixtures/patterns.json` (números reais, só agregados).
 
 ### `GET /v1/orders`
 
