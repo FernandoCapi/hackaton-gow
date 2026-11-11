@@ -24,6 +24,7 @@ dados, time). Alimenta a "defesa das escolhas" e o "que mudou depois do checkpoi
 | 11/11 | Padrões do painel calculados por código (`src/patterns.py`) na base de **12+ meses**, a mesma do modelo; os do piloto comparados com clientes do piloto da mesma época | Painel e motor contam a mesma história com o mesmo número; o piloto ainda tem calote parcial | Time |
 | 11/11 | **Prazo de 36 meses é padrão real**, não armadilha (corrige `docs/padroes.md`) | Com a mesma parcela (até 20% da renda): 5,9% de calote em 36 meses × 13,5% em até 12 meses | Dados |
 | 11/11 | "Parcela entre 25% e 30% da renda" **fora** da lista de padrões | Medida sobre a renda efetiva, dá 10,6% (66 contratos), sem salto; o salto só aparece acima de 30%, nos valores cortados (56%) | Dados |
+| 11/11 | Arquivo de decisões validado pela organização: 2.000 de 2.000 pedidos com decisão, 0 problemas, 1.232 aprovados e 768 negados (gerado por `python -m src.decide` com os parâmetros padrão) | Garante o formato antes do checkpoint; o envio final precisa se chamar exatamente `selic_final.csv` | Organização (validação) |
 
 ## Perguntas para o cliente (janela de dúvidas)
 
