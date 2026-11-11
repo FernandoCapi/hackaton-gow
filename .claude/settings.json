@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker compose:*)",
+      "Bash(python -m src.profile:*)",
+      "Bash(python -m src.train:*)",
+      "Bash(python -m src.explain:*)",
+      "Bash(python scripts/load_sample.py:*)",
+      "Bash(.venv/bin/python -m src.profile:*)",
+      "Bash(.venv/bin/python -m src.train:*)",
+      "Bash(.venv/bin/python -m src.explain:*)",
+      "Bash(.venv/Scripts/python.exe -m src.profile:*)",
+      "Bash(.venv/Scripts/python.exe -m src.train:*)",
+      "Bash(.venv/Scripts/python.exe -m src.explain:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "PowerShell(docker compose:*)",
+      "PowerShell(python -m src.profile:*)",
+      "PowerShell(python -m src.train:*)",
+      "PowerShell(python -m src.explain:*)",
+      "PowerShell(git status:*)",
+      "PowerShell(git diff:*)",
+      "PowerShell(git log:*)"
+    ],
+    "deny": [
+      "Read(./.env)"
+    ]
+  }
+}

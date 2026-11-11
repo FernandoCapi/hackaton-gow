@@ -1,0 +1,21 @@
+services:
+  db:
+    image: postgres:18
+    container_name: hackaton-db
+    environment:
+      POSTGRES_USER: hackaton
+      POSTGRES_PASSWORD: hackaton
+      POSTGRES_DB: hackaton
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql
+      - ./dumps:/dumps
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hackaton -d hackaton"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  pgdata:

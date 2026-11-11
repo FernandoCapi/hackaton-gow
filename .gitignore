@@ -1,0 +1,14 @@
+.env
+.venv/
+__pycache__/
+*.pyc
+
+dumps/*
+!dumps/.gitkeep
+data/
+artifacts/
+
+.claude/settings.local.json
+.streamlit/secrets.toml
+.vscode/
+.idea/

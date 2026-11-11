@@ -1,0 +1,10 @@
+pandas
+sqlalchemy
+psycopg[binary]
+scikit-learn
+lightgbm
+plotly
+streamlit
+anthropic
+python-dotenv
+joblib
