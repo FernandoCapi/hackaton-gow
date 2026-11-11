@@ -50,7 +50,7 @@ python -m src.explain                        # explicação via API (ANTHROPIC_A
 streamlit run app.py                         # painel (legado; o painel novo é o Next em app/)
 python -m src.risk_model                     # treina o modelo de calote -> artifacts/
 python -m src.decide                         # do zero: bureau + modelo se faltarem, gera e valida output/selic_final.csv
-python -m src.patterns                      # padrões do painel -> artifacts/patterns.json (a API gera sozinha se faltar)
+python -m src.patterns                       # imprime os padrões calculados dos dados (a API usa os mesmos)
 python -m src.evaluate                       # relatório do motor -> docs/avaliacao-motor.md
 uvicorn src.api:app --reload --port 8000     # API do motor para o front (docs em /docs)
 python -m src.api --export-openapi           # atualiza contracts/openapi.json após mudar src/schemas.py

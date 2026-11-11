@@ -21,6 +21,9 @@ dados, time). Alimenta a "defesa das escolhas" e o "que mudou depois do checkpoi
 | 11/11 manhã | Regra de valor padrão: **valor pedido ou nega** | No histórico rende mais (+R$ 1,11 mi × +R$ 0,80 mi reduzindo); redução profunda não tem dados | Dados (avaliação) |
 | 11/11 manhã | Cortes de risco 15% (quem a atual aprovaria) e 12% (quem ela negaria) | Ganho no histórico estável entre 12% e 17%; no piloto, os aprovados pela expansão tiveram 3,9% de calote | Dados (avaliação) |
 | 11/11 manhã | Alvo do modelo mantido em **contratos com 12+ meses**. Testado o alvo "calote nos 9 primeiros meses", que traria 560 contratos do piloto para o treino, e descartado | Mesma régua: AUC em maduros nunca vistos 0,797 × 0,772; em clientes do piloto que a atual negaria 0,903 × 0,891; ganho no histórico R$ 1,11 mi × R$ 1,13 mi (dentro do ruído). Incluir o piloto não melhora onde importa | Dados (teste do Davi) |
+| 11/11 | Padrões do painel calculados por código (`src/patterns.py`) na base de **12+ meses**, a mesma do modelo; os do piloto comparados com clientes do piloto da mesma época | Painel e motor contam a mesma história com o mesmo número; o piloto ainda tem calote parcial | Time |
+| 11/11 | **Prazo de 36 meses é padrão real**, não armadilha (corrige `docs/padroes.md`) | Com a mesma parcela (até 20% da renda): 5,9% de calote em 36 meses × 13,5% em até 12 meses | Dados |
+| 11/11 | "Parcela entre 25% e 30% da renda" **fora** da lista de padrões | Medida sobre a renda efetiva, dá 10,6% (66 contratos), sem salto; o salto só aparece acima de 30%, nos valores cortados (56%) | Dados |
 
 ## Perguntas para o cliente (janela de dúvidas)
 

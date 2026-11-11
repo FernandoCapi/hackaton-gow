@@ -1,156 +1,279 @@
-"""Patterns shown in the panel, computed from the database (docs/padroes.md, in numbers).
+"""Patterns for the dashboard (Part 1), computed from the data with the same definitions the
+policy uses (src/features.py). Aggregates only: no customer rows leave this module.
 
-    python -m src.patterns     # -> artifacts/patterns.json (aggregates only, never committed)
+    python -m src.patterns      # prints every pattern sentence
 
-Rates come from mature historical loans (the same base as the risk model); how the current
-policy treats each group is measured on the 2,000 new orders.
+Evidence:
+- historico_maduro: approved loans with 12+ months (same base as the risk model). Every one of
+  them was approved by the current policy, so these show where it approves and loses money.
+- piloto: the randomized pilot (Oct/2025-Mar/2026), the only evidence about clients the current
+  policy denies. Contracts are 6-12 months old, so default rates are still partial; they are
+  compared with pilot clients the current policy would approve (same age).
 """
-import json
+from dataclasses import dataclass, field
+from typing import Callable
 
+import numpy as np
 import pandas as pd
 
-import config
-from src.features import features_at
-from src.policy import current_policy
-from src.risk_model import training_set
-from src.schemas import Pattern
+from src.features import installment
+from src.policy import STEP_CAPACITY, STEP_DOMAIN, STEP_RISK, STEP_STRAIN, current_policy
+from src.schemas import Pattern, PatternGroup
 
-PATTERNS_FILE = config.ARTIFACTS / "patterns.json"
-MIN_CUSTOMERS = 10  # below this a rate is noise, the pattern is left out
+MATURITY_MONTHS = 12
+SMALL_SAMPLE = 30
 
-
-def _bands(column: str, edges: list[float], labels: list[str]):
-    """Chart groups: one mask per band of `column` (right-closed bands)."""
-    return [(label, lambda o, lo=lo, hi=hi: (o[column] > lo) & (o[column] <= hi))
-            for label, lo, hi in zip(labels, edges[:-1], edges[1:])]
+Mask = Callable[[pd.DataFrame], pd.Series]
 
 
-INF = float("inf")
-
-# (id, "Clientes ..." phrase, group mask, chart groups)
-DEFINITIONS = [
-    ("outflow_over_inflow", "Clientes cujas saídas consomem mais de 90% do que entra na conta",
-     lambda o: o.saidas_sobre_entradas > 0.90,
-     _bands("saidas_sobre_entradas", [-INF, 0.70, 0.90, INF], ["Até 70%", "70% a 90%", "Acima de 90%"])),
-    ("recent_overdraft", "Clientes com cheque especial em 2 ou mais dos 3 meses antes do pedido",
-     lambda o: o.cheque_recente_meses >= 2,
-     _bands("cheque_recente_meses", [-INF, 0, 1, INF], ["Nenhum mês", "1 mês", "2 ou 3 meses"])),
-    ("account_drained", "Clientes que tiraram da conta, de uma vez, 3 vezes ou mais a saída típica antes do pedido",
-     lambda o: o.dreno >= 3,
-     [("Menos de 2x", lambda o: o.dreno < 2), ("2x a 3x", lambda o: (o.dreno >= 2) & (o.dreno < 3)),
-      ("3x ou mais", lambda o: o.dreno >= 3)]),
-    ("request_above_capacity", "Clientes que pediram uma parcela acima de 30% da renda (a regra atual corta o valor)",
-     lambda o: o.pedido_acima_30 == 1,
-     [("Pedido cabia na renda", lambda o: o.pedido_acima_30 == 0),
-      ("Pedido acima de 30% da renda", lambda o: o.pedido_acima_30 == 1)]),
-    ("installment_over_slack", "Clientes cuja parcela passa de 45% da sobra do mês (entradas menos saídas)",
-     lambda o: o.parcela_sobre_folga > 0.45,
-     _bands("parcela_sobre_folga", [-INF, 0.25, 0.45, INF], ["Até 25% da sobra", "25% a 45%", "Acima de 45%"])),
-    ("installment_over_income", "Clientes cuja parcela passa de 25% da renda efetiva",
-     lambda o: o.parcela_sobre_renda_efetiva > 0.25,
-     _bands("parcela_sobre_renda_efetiva", [-INF, 0.20, 0.25, 0.30, INF],
-            ["Até 20% da renda", "20% a 25%", "25% a 30%", "Acima de 30%"])),
-    ("inflated_income", "Clientes cujas entradas na conta ficam abaixo de 60% da renda declarada",
-     lambda o: o.entradas_sobre_renda < 0.60,
-     [("Abaixo de 60%", lambda o: o.entradas_sobre_renda < 0.60),
-      ("60% a 90%", lambda o: (o.entradas_sobre_renda >= 0.60) & (o.entradas_sobre_renda < 0.90)),
-      ("90% ou mais", lambda o: o.entradas_sobre_renda >= 0.90)]),
-    ("credit_seeking", "Clientes com 8 ou mais consultas ao CPF em 90 dias",
-     lambda o: o.consultas_90_dias >= 8,
-     _bands("consultas_90_dias", [-INF, 3, 7, INF], ["Até 3 consultas", "4 a 7", "8 ou mais"])),
-    ("new_account", "Clientes com conta aberta há até 3 meses",
-     lambda o: o.meses_conta <= 3,
-     _bands("meses_conta", [-INF, 3, 12, INF], ["Até 3 meses", "4 a 12 meses", "Mais de 12 meses"])),
-    ("heavy_other_debts", "Clientes cuja parcela somada às dívidas em outras instituições passa de 44% da renda",
-     lambda o: o.comprometimento_total > 0.44,
-     _bands("comprometimento_total", [-INF, 0.30, 0.44, INF], ["Até 30% da renda", "30% a 44%", "Acima de 44%"])),
-    # Only the pilot approved these groups, and its loans are still young (< 12 months):
-    # they are compared with the pilot's own average.
-    ("low_score", "Clientes do piloto com score do bureau até 600 (a regra atual nega)",
-     lambda o: o.score <= 600,
-     _bands("score", [-INF, 550, 600, 700, INF], ["Até 550", "551 a 600", "601 a 700", "Acima de 700"]), "pilot"),
-    ("income_1500_2000", "Clientes do piloto com renda declarada entre R$ 1.500 e R$ 2.000 (a regra atual nega)",
-     lambda o: (o.renda_declarada > 1500) & (o.renda_declarada <= 2000),
-     _bands("renda_declarada", [-INF, 2000, 4000, INF], ["Até R$ 2.000", "R$ 2.000 a R$ 4.000", "Acima de R$ 4.000"]),
-     "pilot"),
-    ("active_restriction", "Clientes do piloto com restrição ativa no bureau (a regra atual nega)",
-     lambda o: o.restricoes_ativas >= 1,
-     [("Sem restrição", lambda o: o.restricoes_ativas == 0), ("1 ou mais", lambda o: o.restricoes_ativas >= 1)],
-     "pilot"),
-]
+@dataclass
+class Spec:
+    id: str
+    kind: str  # risk | opportunity | trap
+    evidence: str  # historico_maduro | piloto
+    group: str  # completes "Clientes com ..."
+    mask: Mask
+    groups: list[tuple[str, Mask]]
+    policy_step: str | None = None
+    new_mask: Mask | None = None
+    baseline: Mask | None = None  # None = whole base
+    baseline_label: str = "da média"
+    sentence: Callable[["Spec", dict], str] | None = None
+    note: str | None = None
+    subject: str = "Clientes com"
+    groups_evidence: str | None = None  # draw the bars from another base
+    extra: dict = field(default_factory=dict)
 
 
-def _pct(value: float) -> str:
-    return f"{value * 100:.1f}".removesuffix(".0").replace(".", ",") + "%"
+def pct(value: float) -> str:
+    text = f"{value * 100:.1f}" if value < 0.2 else f"{value * 100:.0f}"
+    return text.replace(".", ",") + "%"
 
 
-def _int(value: int) -> str:
+def num(value: int) -> str:
     return f"{value:,}".replace(",", ".")
 
 
-def _policy_view(approved_share: float) -> str:
-    if approved_share >= 0.9:
-        return "approves"
-    if approved_share <= 0.1:
-        return "denies"
-    return "mixed"
-
-
-def build(orders: pd.DataFrame) -> list[Pattern]:
-    pilot = orders[orders.situacao_final.notna() & orders.politica_aplicada.eq("piloto")]
-    bases = {
-        "mature": (training_set(orders), "da média"),
-        "pilot": (features_at(pilot, pilot.valor_aprovado), "da média do piloto"),
-    }
-    new = orders[orders.tipo_base.eq("novo")]
-    new_approved = current_policy(new).current_decision.eq("APROVADO")
-
-    patterns = []
-    for pattern_id, phrase, mask, groups, *base in DEFINITIONS:
-        hist, average_label = bases[base[0] if base else "mature"]
-        overall = float(hist.calote.mean())
-        in_group = mask(hist)
-        customers = int(hist.loc[in_group, "id_cliente"].nunique())
-        if customers < MIN_CUSTOMERS:
-            continue
-        rate = float(hist.loc[in_group, "calote"].mean())
-        new_in_group = mask(new)
-        chart = [
-            {"label": label, "default_rate": round(float(hist.loc[m, "calote"].mean()), 4),
-             "customers": int(hist.loc[m, "id_cliente"].nunique())}
-            for label, group_mask in groups
-            if (m := group_mask(hist)).sum() >= MIN_CUSTOMERS
-        ]
-        patterns.append(Pattern(
-            id=pattern_id,
-            sentence=f"{phrase} têm inadimplência de {_pct(rate)}, contra {_pct(overall)} {average_label}. "
-                     f"Afeta {_int(customers)} clientes.",
-            group_description=phrase.removeprefix("Clientes "),
-            group_default_rate=round(rate, 4),
-            overall_default_rate=round(overall, 4),
-            customers_affected=customers,
-            direction="worse" if rate > overall else "better",
-            current_policy_view=_policy_view(float(new_approved[new_in_group].mean()) if new_in_group.any() else 0.5),
-            groups=chart,
-        ))
-    return patterns
-
-
-def save(orders: pd.DataFrame) -> list[Pattern]:
-    patterns = build(orders)
-    config.ARTIFACTS.mkdir(exist_ok=True)
-    PATTERNS_FILE.write_text(
-        json.dumps([p.model_dump(mode="json") for p in patterns], indent=2, ensure_ascii=False), encoding="utf-8"
+def _frames(orders: pd.DataFrame) -> dict[str, pd.DataFrame]:
+    frame = orders.join(current_policy(orders))
+    frame["pti_aprov"] = installment(frame.valor_aprovado.fillna(0), frame.prazo_meses) / frame.renda_efetiva
+    frame["cortado"] = frame.valor_aprovado < frame.valor_solicitado - 0.005
+    frame["conta_saudavel"] = (
+        (frame.cheque_recente_meses == 0)
+        & (frame.dreno < 3)
+        & (frame.parcela_sobre_folga <= 0.25)
+        & (frame.saidas_sobre_entradas <= 0.9)
     )
-    return patterns
+    return {
+        "historico_maduro": frame[frame.situacao_final.notna() & (frame.meses_desde_pedido >= MATURITY_MONTHS)],
+        "piloto": frame[frame.politica_aplicada.eq("piloto") & frame.decisao.eq("aprovado")],
+        "novos": frame[frame.tipo_base.eq("novo")],
+    }
+
+
+def _denied_now(f: pd.DataFrame) -> pd.Series:
+    return f.current_decision.eq("NEGADO")
+
+
+def _trap_sentence(spec: Spec, s: dict) -> str:
+    control_label, control_mask = spec.extra["control"]
+    control = s["frame"][spec.mask(s["frame"]) & control_mask(s["frame"])]
+    return (
+        f"{(spec.subject + " ") if spec.subject else ""}{spec.group} parecem arriscados: inadimplência de {pct(s['rate'])}, contra "
+        f"{pct(s['base_rate'])} {spec.baseline_label}. Mas {control_label} o calote cai para "
+        f"{pct(control.calote.mean())} ({num(len(control))} clientes). {spec.extra['lesson']}"
+    )
+
+
+SPECS: list[Spec] = [
+    # --- the current policy approves and loses money (mature loans) ---------------------
+    Spec("outflow_over_inflow", "risk", "historico_maduro",
+         "saídas acima de 90% do que entra na conta",
+         lambda f: f.saidas_sobre_entradas > 0.9,
+         [("até 50%", lambda f: f.saidas_sobre_entradas <= 0.5),
+          ("50–90%", lambda f: f.saidas_sobre_entradas.between(0.5, 0.9, inclusive="right")),
+          ("acima de 90%", lambda f: f.saidas_sobre_entradas > 0.9)],
+         STEP_STRAIN, lambda f: f.saidas_sobre_entradas > 0.9),
+    Spec("recent_overdraft", "risk", "historico_maduro",
+         "cheque especial em 2 ou mais dos 3 meses antes do pedido",
+         lambda f: f.cheque_recente_meses >= 2,
+         [(f"{k} {'mês' if k == 1 else 'meses'}", lambda f, k=k: f.cheque_recente_meses == k) for k in range(4)],
+         STEP_STRAIN, lambda f: f.cheque_recente_meses >= 2,
+         note="Conta só os 3 meses antes do pedido: o cheque especial do mês mais antigo do extrato é "
+              "artefato dos dados."),
+    Spec("account_drain", "risk", "historico_maduro",
+         "a conta esvaziada antes do pedido (uma saída 3 vezes maior que a típica)",
+         lambda f: f.dreno >= 3,
+         [("saída típica", lambda f: f.dreno < 2), ("2 a 3 vezes", lambda f: f.dreno.between(2, 3, inclusive="left")),
+          ("3 vezes ou mais", lambda f: f.dreno >= 3)],
+         STEP_STRAIN, lambda f: f.dreno >= 3),
+    Spec("credit_seeking", "risk", "historico_maduro",
+         "8 ou mais consultas ao CPF em 90 dias",
+         lambda f: f.consultas_90_dias >= 8,
+         [("0 a 3", lambda f: f.consultas_90_dias <= 3), ("4 a 7", lambda f: f.consultas_90_dias.between(4, 7)),
+          ("8 ou mais", lambda f: f.consultas_90_dias >= 8)],
+         STEP_STRAIN, lambda f: f.consultas_90_dias >= 8),
+    Spec("inflated_income", "risk", "historico_maduro",
+         "entradas na conta abaixo de 60% da renda declarada",
+         lambda f: f.entradas_sobre_renda < 0.6,
+         [("abaixo de 60%", lambda f: f.entradas_sobre_renda < 0.6),
+          ("60–80%", lambda f: f.entradas_sobre_renda.between(0.6, 0.8, inclusive="left")),
+          ("80% ou mais", lambda f: f.entradas_sobre_renda >= 0.8)],
+         STEP_STRAIN, lambda f: f.entradas_sobre_renda < 0.6,
+         note="Usa o total de entradas, não o salário: autônomos e empresários quase não recebem "
+              "\"salário\" na conta."),
+    Spec("installment_over_slack", "risk", "historico_maduro",
+         "parcela acima de 45% da sobra do mês (entradas menos saídas)",
+         lambda f: f.parcela_sobre_folga > 0.45,
+         [("até 25%", lambda f: f.parcela_sobre_folga <= 0.25),
+          ("25–45%", lambda f: f.parcela_sobre_folga.between(0.25, 0.45, inclusive="right")),
+          ("acima de 45%", lambda f: f.parcela_sobre_folga > 0.45)],
+         STEP_RISK, lambda f: f.parcela_sobre_folga > 0.45,
+         note="Medido no valor pedido. É o sinal mais forte do modelo de risco."),
+    Spec("amount_cut_by_30pct_rule", "risk", "historico_maduro",
+         "pedido acima da capacidade, aprovado com valor cortado pela regra dos 30%",
+         lambda f: f.cortado,
+         [("valor cortado", lambda f: f.cortado), ("valor pedido", lambda f: ~f.cortado)],
+         STEP_CAPACITY,
+         lambda f: f.current_decision.eq("APROVADO") & (f.current_amount < f.valor_solicitado - 0.005),
+         note="Cortar não resolve: o corte deixa a parcela em exatos 30% da renda. Pedir acima da "
+              "capacidade já é sinal de aperto."),
+    Spec("total_debt_burden", "risk", "historico_maduro",
+         "nossa parcela somada às dívidas em outras instituições acima de 44% da renda",
+         lambda f: f.comprometimento_total > 0.44,
+         [("até 30%", lambda f: f.comprometimento_total <= 0.30),
+          ("30–44%", lambda f: f.comprometimento_total.between(0.30, 0.44, inclusive="right")),
+          ("acima de 44%", lambda f: f.comprometimento_total > 0.44)],
+         STEP_RISK, lambda f: f.comprometimento_total > 0.44),
+    Spec("new_account", "risk", "historico_maduro",
+         "conta aberta há até 3 meses",
+         lambda f: f.meses_conta <= 3,
+         [("até 3 meses", lambda f: f.meses_conta <= 3), ("4 a 6 meses", lambda f: f.meses_conta.between(3, 6, inclusive="right")),
+          ("mais de 6 meses", lambda f: f.meses_conta > 6)],
+         STEP_RISK, lambda f: f.meses_conta <= 3),
+    Spec("active_restriction", "risk", "piloto",
+         "restrição ativa no bureau",
+         lambda f: f.restricoes_ativas == 1,
+         [("sem restrição", lambda f: f.restricoes_ativas == 0), ("1 restrição", lambda f: f.restricoes_ativas == 1)],
+         STEP_DOMAIN, lambda f: f.restricoes_ativas >= 1,
+         baseline=lambda f: f.restricoes_ativas == 0, baseline_label="de quem não tem restrição",
+         note="Aqui a regra atual acerta: manter a negativa."),
+    # --- the current policy denies clients who would pay (pilot) ------------------------
+    Spec("denied_with_healthy_account", "opportunity", "piloto",
+         "a política atual negaria, mas com conta saudável (sem cheque especial recente, sem conta "
+         "esvaziada, gastos até 90% das entradas e parcela até 25% da sobra)",
+         lambda f: _denied_now(f) & f.conta_saudavel,
+         [("atual negaria, conta saudável", lambda f: _denied_now(f) & f.conta_saudavel),
+          ("atual negaria, conta com aperto", lambda f: _denied_now(f) & ~f.conta_saudavel),
+          ("atual aprovaria", lambda f: ~_denied_now(f))],
+         STEP_RISK, lambda f: _denied_now(f) & f.conta_saudavel,
+         baseline=lambda f: ~_denied_now(f), baseline_label="de quem a política atual aprovaria",
+         subject="Clientes que"),
+    Spec("score_does_not_predict", "opportunity", "piloto",
+         "score do bureau até 600, sem restrição e renda acima de R$ 2.000 (negados hoje só pelo score)",
+         lambda f: (f.score <= 600) & (f.restricoes_ativas == 0) & (f.renda_declarada > 2000),
+         [(f"score {low + 1}–{high} (maduros)", lambda f, low=low, high=high: f.score.between(low + 1, high))
+          for low, high in [(600, 650), (650, 700), (700, 750), (750, 800), (800, 850), (850, 1000)]],
+         STEP_DOMAIN, lambda f: (f.score <= 600) & (f.restricoes_ativas == 0) & (f.renda_declarada > 2000),
+         baseline=lambda f: (f.score > 600) & (f.restricoes_ativas == 0) & (f.renda_declarada > 2000),
+         baseline_label="dos que têm score acima de 600",
+         groups_evidence="historico_maduro",
+         note="O gráfico mostra os contratos maduros: todas as faixas de score ficam entre 12% e 16% de "
+              "calote, o score não separa bom de mau pagador. No piloto, os negados só pelo score ficam "
+              "abaixo do ponto de equilíbrio (~17%): negar por score descarta clientes que dão lucro."),
+    Spec("income_1500_2000", "opportunity", "piloto",
+         "renda declarada entre R$ 1.500 e R$ 2.000",
+         lambda f: (f.renda_declarada > 1500) & (f.renda_declarada <= 2000),
+         [("R$ 1.500–2.000", lambda f: (f.renda_declarada > 1500) & (f.renda_declarada <= 2000)),
+          ("acima de R$ 2.000", lambda f: f.renda_declarada > 2000)],
+         STEP_DOMAIN, lambda f: (f.renda_declarada > 1500) & (f.renda_declarada <= 2000),
+         baseline=lambda f: f.renda_declarada > 2000, baseline_label="de quem declara mais de R$ 2.000",
+         note="Um pouco acima de quem ganha mais, mas abaixo do ponto de equilíbrio (~17%): o corte em "
+              "R$ 2.000 nega clientes que dão lucro. A política proposta decide pelo risco, não pela renda."),
+    Spec("long_term", "opportunity", "historico_maduro",
+         "prazo de 36 meses",
+         lambda f: f.prazo_meses == 36,
+         [(f"{k} meses", lambda f, k=k: f.prazo_meses == k) for k in (6, 12, 18, 24, 36)],
+         STEP_RISK, lambda f: f.prazo_meses == 36,
+         note="Não é só a parcela menor: com a parcela até 20% da renda, 36 meses ainda têm menos calote "
+              "que prazos de até 12 meses. O modelo de risco usa o prazo."),
+    # --- looks dangerous, but is not --------------------------------------------------------
+    Spec("large_amount", "trap", "historico_maduro",
+         "Pedidos acima de R$ 20 mil",
+         lambda f: f.valor_aprovado > 20000,
+         [("acima de R$ 20 mil", lambda f: f.valor_aprovado > 20000),
+          ("acima de R$ 20 mil, parcela até 20%", lambda f: (f.valor_aprovado > 20000) & (f.pti_aprov <= 0.20)),
+          ("até R$ 20 mil", lambda f: f.valor_aprovado <= 20000)],
+         STEP_CAPACITY, None, sentence=_trap_sentence, subject="",
+         extra={"control": ("com parcela de até 20% da renda", lambda f: f.pti_aprov <= 0.20),
+                "lesson": "O que pesa é a parcela, não o valor."}),
+]
+
+
+def _current_view(frame: pd.DataFrame) -> str:
+    share = frame.current_decision.eq("APROVADO").mean()
+    return "approves" if share >= 0.95 else "denies" if share <= 0.05 else "mixed"
+
+
+def _build(spec: Spec, frames: dict[str, pd.DataFrame]) -> Pattern | None:
+    f = frames[spec.evidence]
+    group = f[spec.mask(f).fillna(False)]
+    if group.empty:
+        return None
+    base = f if spec.baseline is None else f[spec.baseline(f).fillna(False)]
+    stats = {"frame": f, "rate": float(group.calote.mean()), "base_rate": float(base.calote.mean()), "n": len(group)}
+    if spec.sentence:
+        sentence = spec.sentence(spec, stats)
+    else:
+        sentence = (
+            f"{spec.subject} {spec.group} têm inadimplência de {pct(stats['rate'])}, contra "
+            f"{pct(stats['base_rate'])} {spec.baseline_label}. Afeta {num(stats['n'])} clientes."
+        )
+    caveats = []
+    if spec.evidence == "piloto":
+        caveats.append("Piloto sorteado com contratos de 6 a 12 meses: o calote ainda é parcial; a "
+                       "comparação é com clientes do piloto da mesma época.")
+    if stats["n"] < SMALL_SAMPLE:
+        caveats.append(f"Amostra pequena ({stats['n']} contratos): usar como sinal, não como prova.")
+    if spec.note:
+        caveats.append(spec.note)
+    new = frames["novos"]
+    bars = frames[spec.groups_evidence or spec.evidence]
+    return Pattern(
+        id=spec.id,
+        sentence=sentence,
+        group_description=spec.group[0].upper() + spec.group[1:],
+        group_default_rate=round(stats["rate"], 4),
+        overall_default_rate=round(stats["base_rate"], 4),
+        customers_affected=stats["n"],
+        direction="worse" if stats["rate"] > stats["base_rate"] else "better",
+        current_policy_view=_current_view(group),
+        groups=[
+            PatternGroup(label=label, default_rate=round(float(bars.calote[m].mean()), 4), customers=int(m.sum()))
+            for label, mask in spec.groups
+            if (m := mask(bars).fillna(False)).any()
+        ],
+        kind=spec.kind,
+        new_orders_affected=int(spec.new_mask(new).fillna(False).sum()) if spec.new_mask else None,
+        policy_step=spec.policy_step,
+        evidence=spec.evidence,
+        caveat=" ".join(caveats) or None,
+    )
+
+
+def compute_patterns(orders: pd.DataFrame) -> list[Pattern]:
+    frames = _frames(orders)
+    return [pattern for spec in SPECS if (pattern := _build(spec, frames)) is not None]
 
 
 def main():
     from src.features import load_orders
 
-    for pattern in save(load_orders()):
-        print(f"- {pattern.sentence}")
-    print(f"Gravado em {PATTERNS_FILE}")
+    for pattern in compute_patterns(load_orders()):
+        new = f" | novos: {pattern.new_orders_affected}" if pattern.new_orders_affected is not None else ""
+        print(f"[{pattern.kind}/{pattern.evidence}] {pattern.sentence}{new}")
+        if pattern.caveat:
+            print(f"    ressalva: {pattern.caveat}")
 
 
 if __name__ == "__main__":

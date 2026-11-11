@@ -502,6 +502,31 @@ export interface components {
              * @description Barras do gráfico, já agregadas
              */
             groups: components["schemas"]["PatternGroup"][];
+            /**
+             * Kind
+             * @description risk: a atual aprova e perde; opportunity: a atual nega quem pagaria; trap: parece perigoso, mas não é
+             */
+            kind?: ("risk" | "opportunity" | "trap") | null;
+            /**
+             * New Orders Affected
+             * @description Quantos dos 2.000 pedidos novos caem no grupo
+             */
+            new_orders_affected?: number | null;
+            /**
+             * Policy Step
+             * @description Passo da política proposta que usa este padrão
+             */
+            policy_step?: string | null;
+            /**
+             * Evidence
+             * @description historico_maduro: contratos com 12+ meses; piloto: sorteado, calote ainda parcial
+             */
+            evidence?: ("historico_maduro" | "piloto") | null;
+            /**
+             * Caveat
+             * @description Ressalva para o analista (amostra pequena, base de comparação)
+             */
+            caveat?: string | null;
         };
         /** PatternGroup */
         PatternGroup: {

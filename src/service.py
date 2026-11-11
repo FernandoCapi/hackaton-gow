@@ -100,7 +100,6 @@ def _current_decisions() -> pd.DataFrame:
 def health() -> Health:
     mode: SectionMode = "live" if is_live() else "fixtures"
     sections: dict[str, SectionMode] = {name: mode for name in SECTION_NAMES}
-    sections["patterns"] = "live" if _patterns_live() else "fixtures"
     model_version = None
     if mode == "live":
         model_version = f"lightgbm-calote-{engine().metrics['trained_until']}"
@@ -147,20 +146,18 @@ def summary() -> Summary:
     )
 
 
-def _patterns_live() -> bool:
-    from src.patterns import PATTERNS_FILE
+@lru_cache(maxsize=1)
+def _live_patterns() -> tuple[Pattern, ...]:
+    from src.patterns import compute_patterns
 
-    return os.getenv("ENGINE_MODE") != "fixtures" and (PATTERNS_FILE.exists() or is_live())
+    return tuple(compute_patterns(engine().orders))
 
 
 def patterns() -> list[Pattern]:
-    from src import patterns as computed
-
-    if not _patterns_live():
-        return [Pattern.model_validate(item) for item in _fixture("patterns")]
-    if not computed.PATTERNS_FILE.exists():
-        return computed.save(engine().orders)
-    return [Pattern.model_validate(item) for item in json.loads(computed.PATTERNS_FILE.read_text(encoding="utf-8"))]
+    """Patterns computed from the data (src/patterns.py), same definitions as the policy."""
+    if is_live():
+        return list(_live_patterns())
+    return [Pattern.model_validate(item) for item in _fixture("patterns")]
 
 
 # --- policy ---------------------------------------------------------------------------
