@@ -438,7 +438,12 @@ def list_orders(
         rows = [row for row in rows if needle in row.order_id or needle in row.customer_id]
     key = {
         "risk": lambda row: -row.default_risk,
+        "risk_asc": lambda row: row.default_risk,
         "amount": lambda row: -row.requested_amount,
+        "amount_asc": lambda row: row.requested_amount,
+        "approved": lambda row: -row.approved_amount,
+        "profit": lambda row: -row.expected_profit,
+        "recent": lambda row: -row.order_date.toordinal(),
         "order_id": lambda row: row.order_id,
     }[sort]
     rows.sort(key=key)

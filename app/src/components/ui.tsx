@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { Check, Sparkles, X } from "lucide-react";
+import { Check, Sparkles, Sprout, X } from "lucide-react";
 
 export function Section({ title, subtitle, icon: Icon, children }: { title: string; subtitle?: string; icon?: LucideIcon; children: React.ReactNode }) {
   return (
@@ -55,20 +55,33 @@ export function Stat({ label, value, hint, icon, tone = "accent" }: { label: str
   );
 }
 
-export function Status({ loading, error }: { loading: boolean; error: Error | null }) {
-  if (error) return <p role="alert" className="rounded-lg bg-critical/10 px-3 py-2 text-sm text-critical">{error.message}</p>;
-  if (loading) return (
-    <div className="flex items-center gap-2 text-sm text-muted">
-      <span className="size-3 animate-pulse rounded-full bg-accent" aria-hidden /> Carregando…
+/** Spinning coin styled like the sidebar logo (same gold gradient and sprout). Squashes on X instead of rotating, so the icon is never mirrored. */
+export function CoinLoader({ size = 56, label = "Carregando…" }: { size?: number; label?: string }) {
+  return (
+    <div role="status" className="flex min-h-[60vh] w-full flex-col items-center justify-center gap-3 text-sm text-muted">
+      <span className="coin-shadow" aria-hidden>
+        <span
+          className="coin-spin grid place-items-center rounded-full bg-gradient-to-br from-[#b88a16] to-[#8a6510] text-white shadow-md ring-2 ring-inset ring-white/25"
+          style={{ width: size, height: size }}
+        >
+          <Sprout style={{ width: size * 0.45, height: size * 0.45 }} strokeWidth={2} />
+        </span>
+      </span>
+      {label}
     </div>
   );
+}
+
+export function Status({ loading, error }: { loading: boolean; error: Error | null }) {
+  if (error) return <p role="alert" className="rounded-lg bg-critical/10 px-3 py-2 text-sm text-critical">{error.message}</p>;
+  if (loading) return <CoinLoader />;
   return null;
 }
 
 /** Marks what goes beyond the challenge: visible, but never mistaken for the official decision. */
 export function ExtraBadge({ className = "" }: { className?: string }) {
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full bg-extra px-2 py-0.5 text-[11px] font-semibold tracking-wide text-white ${className}`}>
+    <span className={`inline-flex items-center gap-1 rounded-full bg-extra px-2 py-0.5 text-[11px] font-semibold tracking-wide text-on-solid ${className}`}>
       <Sparkles className="size-3" aria-hidden /> EXTRA
     </span>
   );

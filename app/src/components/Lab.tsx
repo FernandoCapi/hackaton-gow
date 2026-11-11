@@ -63,7 +63,7 @@ function ApproveForm({ params }: { params: PolicyParams }) {
       <p className="text-sm font-medium">Aprovar estes parâmetros como política em vigor</p>
       <label htmlFor="approved-by" className="sr-only">Nome do analista</label>
       <input id="approved-by" required value={name} onChange={(e) => setName(e.target.value)} placeholder="Nome do analista" className="rounded-md border border-border bg-background px-2 py-1.5 text-sm" />
-      <button disabled={approve.isPending || !name.trim()} className="rounded-lg bg-accent px-3 py-2 text-sm font-medium text-white hover:bg-accent-strong disabled:opacity-50">
+      <button disabled={approve.isPending || !name.trim()} className="rounded-lg bg-accent px-3 py-2 text-sm font-medium text-on-solid hover:bg-accent-strong disabled:opacity-50">
         {approve.isPending ? "Aprovando…" : "Aprovar política"}
       </button>
       {approve.isError && <p role="alert" className="text-sm text-critical">{approve.error.message}</p>}
@@ -155,7 +155,7 @@ function LabBody({ policy }: { policy: Policy }) {
               <Stat icon={BadgeCheck} label="Aprovados" value={int(data.new_orders.approved)} hint={`Regra antiga: ${int(data.new_orders.current_approved)}`} />
               <Stat icon={RefreshCw} tone="gold" label="Decisões que mudam" value={int(data.new_orders.changed_vs_current)} hint="Em relação à regra antiga" />
             </div>
-            <h3 className="mb-2 mt-5 text-sm font-medium text-muted">No histórico (contratos encerrados, desfecho real)</h3>
+            <h3 className="mb-2 mt-5 text-sm font-medium text-muted">No histórico (contratos com 12+ meses)</h3>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
               <Stat icon={History} tone="good" label="Ganho sobre a regra antiga" value={brl(data.historical.gain)} hint={`${brl(data.historical.proposed_result)} contra ${brl(data.historical.current_result)}`} />
               <Stat icon={ShieldCheck} tone="critical" label="Calotes evitados" value={int(data.historical.defaults_avoided)} hint="Aprovados pela regra antiga que a proposta nega" />

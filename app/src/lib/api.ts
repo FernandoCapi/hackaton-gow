@@ -1,4 +1,4 @@
-import type { components } from "./api-types";
+import type { components, operations } from "./api-types";
 
 type Schemas = components["schemas"];
 export type Health = Schemas["Health"];
@@ -17,7 +17,7 @@ export type OrderQuery = {
   decision?: Decision;
   changed?: boolean;
   q?: string;
-  sort?: "risk" | "amount" | "order_id";
+  sort?: NonNullable<operations["get_orders_v1_orders_get"]["parameters"]["query"]>["sort"];
   page?: number;
   page_size?: number;
 };

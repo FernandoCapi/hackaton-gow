@@ -33,7 +33,7 @@ export default function PolicySteps() {
               const Icon = outcome?.icon ?? Gauge;
               return (
                 <li key={step.order} className="relative">
-                  <span className={`absolute -left-12 top-1 grid size-10 place-items-center rounded-full text-sm font-semibold text-white ring-4 ring-background ${outcome?.dot ?? "bg-accent"}`}>
+                  <span className={`absolute -left-12 top-1 grid size-10 place-items-center rounded-full text-sm font-semibold text-on-solid ring-4 ring-background ${outcome?.dot ?? "bg-accent"}`}>
                     {step.order}
                   </span>
                   <div className="rounded-xl border border-border bg-surface p-5 shadow-sm">
@@ -48,7 +48,7 @@ export default function PolicySteps() {
               );
             })}
           </ol>
-          <Link href="/laboratorio" className="mt-6 inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-accent-strong">
+          <Link href="/laboratorio" className="mt-6 inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-on-solid shadow-sm hover:bg-accent-strong">
             <FlaskConical className="size-4" aria-hidden />
             {data.approved_by ? "Testar outros limites" : "Testar e aprovar no laboratório"}
           </Link>

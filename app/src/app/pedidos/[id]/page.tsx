@@ -10,9 +10,9 @@ import { Card, DecisionBadge, ExtraBadge, IconChip, Status } from "@/components/
 import type { LucideIcon } from "lucide-react";
 
 const STEP_STYLE: Record<OrderDetail["steps"][number]["result"], { icon: LucideIcon; label: string; className: string }> = {
-  passou: { icon: Check, label: "Passou", className: "bg-good text-white" },
-  negou: { icon: X, label: "Negou", className: "bg-critical text-white" },
-  ajustou: { icon: ArrowDownRight, label: "Ajustou o valor", className: "bg-gold text-white" },
+  passou: { icon: Check, label: "Passou", className: "bg-good text-on-solid" },
+  negou: { icon: X, label: "Negou", className: "bg-critical text-on-solid" },
+  ajustou: { icon: ArrowDownRight, label: "Ajustou o valor", className: "bg-gold text-on-solid" },
 };
 
 function Facts({ title, icon, rows }: { title: string; icon: LucideIcon; rows: [string, string][] }) {

@@ -20,7 +20,7 @@ export default function Overview() {
       <Status loading={isLoading} error={error} />
       {data && (
         <div className="grid gap-5">
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-sidebar via-[#0f3d36] to-accent-strong p-6 text-white shadow-lg md:p-8">
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-sidebar via-[#0f3d36] to-[#0b5953] p-6 text-white shadow-lg md:p-8">
             <div className="absolute -right-10 -top-10 size-48 rounded-full bg-gold/20 blur-2xl" aria-hidden />
             <p className="flex items-center gap-2 text-sm text-white/75"><TrendingUp className="size-4" aria-hidden /> Ganho esperado sobre a regra antiga</p>
             <p className="mt-2 text-4xl font-semibold tracking-tight tabular-nums md:text-5xl">{brl(data.gain)}</p>
@@ -37,7 +37,7 @@ export default function Overview() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <Stat icon={BadgeCheck} tone="good" label="Aprovados pela proposta" value={int(data.proposed_policy.approved)} hint={`Regra antiga: ${int(data.current_policy.approved)} de ${int(data.new_orders_total)}`} />
             <Stat icon={Banknote} tone="gold" label="Valor aprovado" value={brl(data.proposed_policy.approved_amount)} hint={`Regra antiga: ${brl(data.current_policy.approved_amount)}`} />
-            <Stat icon={ShieldAlert} tone="critical" label="Inadimplência histórica" value={pct(data.base_default_rate)} hint={`${int(data.historical_mature_total)} contratos com desfecho conhecido`} />
+            <Stat icon={ShieldAlert} tone="critical" label="Inadimplência histórica" value={pct(data.base_default_rate)} hint={`${int(data.historical_mature_total)} contratos com 12+ meses`} />
             <Stat icon={Target} label="Negados pela proposta" value={int(data.proposed_policy.denied)} hint={`Regra antiga: ${int(data.current_policy.denied)}`} />
           </div>
 
@@ -88,7 +88,7 @@ export default function Overview() {
                     </p>
                   </div>
                 </div>
-                <Link href="/pedidos" className="rounded-lg bg-extra px-3 py-1.5 text-sm font-medium text-white hover:brightness-110">Ver pedidos</Link>
+                <Link href="/pedidos" className="rounded-lg bg-extra px-3 py-1.5 text-sm font-medium text-on-solid hover:brightness-110">Ver pedidos</Link>
               </div>
             </Card>
           )}

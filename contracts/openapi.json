@@ -267,7 +267,12 @@
             "schema": {
               "enum": [
                 "risk",
+                "risk_asc",
                 "amount",
+                "amount_asc",
+                "approved",
+                "profit",
+                "recent",
                 "order_id"
               ],
               "type": "string",

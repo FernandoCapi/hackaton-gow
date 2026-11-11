@@ -1,11 +1,46 @@
 "use client";
 
+import Link from "next/link";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, Info, Search, Sparkle, TrendingDown, TrendingUp } from "lucide-react";
-import { Bar, BarChart, CartesianGrid, Cell, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { AlertTriangle, ArrowRight, Info, Search, Sparkle } from "lucide-react";
+import { Bar, BarChart, CartesianGrid, Cell, LabelList, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { api, type Pattern } from "@/lib/api";
 import { int, pct } from "@/lib/format";
 import { Card, IconChip, Section, Status } from "./ui";
+
+type Kind = NonNullable<Pattern["kind"]>;
+
+// Short card titles; the full sentence stays under "Detalhes". Unknown ids fall back to group_description.
+const TITLES: Record<string, string> = {
+  outflow_over_inflow: "Saídas acima de 90% das entradas",
+  recent_overdraft: "Cheque especial recente",
+  account_drain: "Conta esvaziada antes do pedido",
+  credit_seeking: "8 ou mais consultas ao CPF em 90 dias",
+  inflated_income: "Entradas abaixo de 60% da renda",
+  installment_over_slack: "Parcela acima de 45% da sobra do mês",
+  amount_cut_by_30pct_rule: "Valor cortado pela regra dos 30%",
+  total_debt_burden: "Dívidas somadas acima de 44% da renda",
+  new_account: "Conta aberta há até 3 meses",
+  active_restriction: "Restrição ativa no bureau",
+  denied_with_healthy_account: "Negados hoje com conta saudável",
+  score_does_not_predict: "Score até 600, sem restrição",
+  income_1500_2000: "Renda entre R$ 1.500 e R$ 2.000",
+  long_term: "Prazo de 36 meses",
+  large_amount: "Valor acima de R$ 20 mil",
+};
+
+const KINDS = [
+  { kind: "risk", label: "Onde a regra antiga aprova e perde dinheiro", tab: "Calote alto", icon: AlertTriangle, tone: "critical", color: "var(--critical)", border: "border-l-critical" },
+  { kind: "opportunity", label: "Onde a regra antiga nega quem pagaria", tab: "Calote baixo", icon: Sparkle, tone: "good", color: "var(--good)", border: "border-l-good" },
+  { kind: "trap", label: "Parecem perigosos, mas não são", tab: "Falso alarme", icon: Info, tone: "gold", color: "var(--gold)", border: "border-l-gold" },
+] as const;
+type KindInfo = (typeof KINDS)[number];
+
+const EVIDENCE: Record<NonNullable<Pattern["evidence"]>, string> = {
+  historico_maduro: "Contratos com 12+ meses",
+  piloto: "Piloto (calote ainda parcial)",
+};
 
 const POLICY_VIEW: Record<Pattern["current_policy_view"], string> = {
   approves: "Regra antiga aprova",
@@ -13,102 +48,162 @@ const POLICY_VIEW: Record<Pattern["current_policy_view"], string> = {
   mixed: "Regra antiga aprova parte",
 };
 
-function PatternChart({ pattern }: { pattern: Pattern }) {
+/** "… contra 9,7% de quem a política atual aprovaria. …" -> "de quem a política atual aprovaria" */
+function comparisonLabel(sentence: string): string {
+  return sentence.match(/contra [\d.,]+% (.+?)\.(?:\s|$)/)?.[1] ?? "da média";
+}
+
+/** The bar that is the pattern's own group, if it is drawn (some charts come from another base). */
+function highlightIndex(pattern: Pattern): number {
+  const diffs = pattern.groups.map((g) => Math.abs(g.default_rate - pattern.group_default_rate));
+  const best = diffs.indexOf(Math.min(...diffs));
+  return diffs[best] < 0.002 ? best : -1;
+}
+
+function PatternChart({ pattern, color }: { pattern: Pattern; color: string }) {
+  const highlight = highlightIndex(pattern);
   return (
-    <ResponsiveContainer width="100%" height={56 + pattern.groups.length * 40}>
+    <>
+    <ResponsiveContainer width="100%" height={56 + pattern.groups.length * 36}>
       <BarChart data={pattern.groups} layout="vertical" margin={{ left: 8, right: 48, top: 20 }}>
         <CartesianGrid horizontal={false} stroke="var(--border)" />
-        <XAxis type="number" tickFormatter={pct} tick={{ fill: "var(--muted)", fontSize: 12 }} stroke="var(--border)" />
-        <YAxis type="category" dataKey="label" width={170} tick={{ fill: "var(--foreground)", fontSize: 12 }} stroke="var(--border)" />
+        <XAxis type="number" tickFormatter={pct} tick={{ fill: "var(--foreground)", fontSize: 11 }} stroke="var(--border)" />
+        <YAxis type="category" dataKey="label" width={150} tick={{ fill: "var(--foreground)", fontSize: 11 }} stroke="var(--border)" />
         <Tooltip
           cursor={{ fill: "var(--border)", opacity: 0.4 }}
           contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--foreground)" }}
-          formatter={(value, _name, item) => [`${pct(Number(value))} (${int(item.payload.customers)} clientes)`, "Inadimplência"]}
+          labelStyle={{ color: "var(--foreground)", fontWeight: 600 }}
+          itemStyle={{ color: "var(--foreground)" }}
+          separator=": "
+          formatter={(value, _name, item) => [`${pct(Number(value))} (${int(item.payload.customers)} clientes)`, "Calote"]}
         />
         <ReferenceLine
           x={pattern.overall_default_rate}
           stroke="var(--muted)"
           strokeDasharray="4 4"
-          label={{ value: `média ${pct(pattern.overall_default_rate)}`, position: "top", fill: "var(--muted)", fontSize: 12 }}
+          label={{ value: `base ${pct(pattern.overall_default_rate)}`, position: "top", fill: "var(--foreground)", fontSize: 11 }}
         />
-        <Bar dataKey="default_rate" radius={[0, 6, 6, 0]} barSize={20}>
-          {pattern.groups.map((group) => (
-            <Cell key={group.label} fill={group.default_rate > pattern.overall_default_rate ? "var(--critical)" : "var(--series-1)"} fillOpacity={0.85} />
+        <Bar dataKey="default_rate" radius={[0, 6, 6, 0]} barSize={18}>
+          {pattern.groups.map((g, i) => (
+            <Cell key={g.label} fill={highlight === -1 || i === highlight ? color : "var(--muted)"} fillOpacity={i === highlight || highlight === -1 ? 1 : 0.55} />
           ))}
+          <LabelList dataKey="customers" position="right" formatter={(n) => int(Number(n))} fill="var(--muted)" fontSize={11} />
         </Bar>
       </BarChart>
     </ResponsiveContainer>
+    <p className="text-xs text-muted">Número ao lado da barra: clientes no grupo.</p>
+    </>
   );
 }
 
-function PatternCard({ pattern }: { pattern: Pattern }) {
-  const worse = pattern.direction === "worse";
-  const trap = pattern.kind === "trap";
-  const border = trap ? "border-l-gold" : worse ? "border-l-critical" : "border-l-good";
+/** Two groups: the chart only repeats the headline number, so list them with their size instead. */
+function PatternPair({ pattern, color }: { pattern: Pattern; color: string }) {
+  const highlight = highlightIndex(pattern);
   return (
-    <Card className={`border-l-4 ${border}`}>
-      <div className="flex items-start gap-3">
-        <IconChip icon={trap ? Info : worse ? TrendingUp : TrendingDown} tone={trap ? "gold" : worse ? "critical" : "good"} />
-        <div className="min-w-0">
-          <p className="font-medium leading-snug">{pattern.sentence}</p>
-          <div className="mt-2 flex flex-wrap gap-1.5 text-xs">
-            <span className={`rounded-full px-2 py-0.5 font-medium ${worse ? "bg-critical/10 text-critical" : "bg-good/10 text-good"}`}>
-              {worse ? "Paga pior que a média" : "Paga melhor que a média"}
-            </span>
-            <span className="rounded-full bg-surface-2 px-2 py-0.5 text-muted ring-1 ring-border">{POLICY_VIEW[pattern.current_policy_view]}</span>
-            {pattern.policy_step && (
-              <span className="rounded-full bg-accent-soft px-2 py-0.5 font-medium text-accent">Passo: {pattern.policy_step}</span>
-            )}
-            {pattern.evidence === "piloto" && (
-              <span className="rounded-full bg-surface-2 px-2 py-0.5 text-muted ring-1 ring-border">Base: piloto sorteado</span>
-            )}
-            {pattern.new_orders_affected != null && (
-              <span className="rounded-full bg-gold-soft px-2 py-0.5 font-medium text-gold">{int(pattern.new_orders_affected)} pedidos novos no grupo</span>
-            )}
-          </div>
-        </div>
+    <ul className="divide-y divide-border rounded-md border border-border text-sm">
+      {pattern.groups.map((g, i) => (
+        <li key={g.label} className="flex items-baseline justify-between gap-3 px-3 py-2">
+          <span>{g.label}</span>
+          <span className="whitespace-nowrap">
+            <span className="font-semibold tabular-nums" style={{ color: i === highlight ? color : undefined }}>{pct(g.default_rate)}</span>
+            <span className="ml-2 text-xs text-muted tabular-nums">{int(g.customers)} clientes</span>
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function Tag({ children }: { children: React.ReactNode }) {
+  return <span className="rounded-full bg-surface-2 px-2 py-0.5 text-xs text-muted ring-1 ring-border">{children}</span>;
+}
+
+function PatternCard({ pattern, info }: { pattern: Pattern; info: KindInfo }) {
+  const { color } = info;
+  return (
+    <Card className={`border-l-4 ${info.border}`}>
+      <div className="flex items-center gap-3">
+        <IconChip icon={info.icon} tone={info.tone} size="sm" />
+        <h3 className="font-semibold">{TITLES[pattern.id] ?? pattern.group_description}</h3>
       </div>
-      {pattern.caveat && (
-        <p className="mt-3 flex gap-2 rounded-lg bg-surface-2 px-3 py-2 text-xs text-muted">
-          <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden /> {pattern.caveat}
-        </p>
-      )}
-      <div className="mt-3"><PatternChart pattern={pattern} /></div>
+      <p className="mt-2 flex flex-wrap items-baseline gap-x-2">
+        <span className="text-3xl font-semibold tabular-nums" style={{ color }}>{pct(pattern.group_default_rate)}</span>
+        <span className="text-sm text-muted">
+          de calote vs {pct(pattern.overall_default_rate)} {comparisonLabel(pattern.sentence)}
+        </span>
+      </p>
+      <div className="mt-3 flex flex-wrap gap-1.5">
+        {pattern.policy_step && (
+          <Link href="/politica" className="inline-flex items-center gap-1 rounded-full bg-accent-soft px-2 py-0.5 text-xs font-medium text-accent hover:underline">
+            Passo: {pattern.policy_step} <ArrowRight className="size-3" aria-hidden />
+          </Link>
+        )}
+        {pattern.new_orders_affected != null && (
+          <span className="rounded-full bg-gold-soft px-2 py-0.5 text-xs font-medium text-gold">
+            {int(pattern.new_orders_affected)} pedidos novos
+          </span>
+        )}
+        <Tag>{POLICY_VIEW[pattern.current_policy_view]}</Tag>
+        {pattern.evidence && <Tag>{EVIDENCE[pattern.evidence]}</Tag>}
+      </div>
+      <div className="mt-3">
+        {pattern.groups.length === 2 ? <PatternPair pattern={pattern} color={color} /> : <PatternChart pattern={pattern} color={color} />}
+      </div>
+      <details className="mt-1 text-sm">
+        <summary className="cursor-pointer text-foreground/80">Detalhes</summary>
+        <p className="mt-2">{pattern.sentence}</p>
+        {pattern.caveat && (
+          <p className="mt-2 rounded-md bg-warning-bg px-3 py-2 text-xs text-warning-fg">
+            <span aria-hidden>⚠ </span>{pattern.caveat}
+          </p>
+        )}
+      </details>
     </Card>
   );
 }
 
-const GROUPS = [
-  { kind: "risk", icon: AlertTriangle, tone: "text-critical", title: "Onde a regra antiga aprova e perde dinheiro" },
-  { kind: "opportunity", icon: Sparkle, tone: "text-good", title: "Onde a regra antiga nega quem pagaria" },
-  { kind: "trap", icon: Info, tone: "text-gold", title: "Parecem perigosos, mas não são" },
-] as const;
-
 export default function Patterns() {
   const { data, isLoading, error } = useQuery({ queryKey: ["patterns"], queryFn: api.patterns });
-  // older API versions do not send `kind`: fall back to the direction of the effect
-  const kindOf = (p: Pattern) => p.kind ?? (p.direction === "worse" ? "risk" : "opportunity");
+  const [tab, setTab] = useState<Kind>("risk");
+  const byKind = (kind: Kind) =>
+    (data ?? [])
+      .filter((p) => (p.kind ?? (p.direction === "worse" ? "risk" : "opportunity")) === kind)
+      .sort((a, b) => (b.new_orders_affected ?? -1) - (a.new_orders_affected ?? -1));
+
   return (
-    <Section icon={Search} title="Padrões encontrados" subtitle="Grupos de clientes que pagam pior ou melhor que a média, no histórico de contratos com desfecho conhecido.">
+    <Section icon={Search} title="Padrões encontrados" subtitle="Grupos que pagam pior ou melhor do que a regra antiga supõe, no histórico e no piloto.">
       <Status loading={isLoading} error={error} />
       {data && (
-        <div className="grid gap-8">
-          {GROUPS.map((group) => {
-            const items = data.filter((p) => kindOf(p) === group.kind);
-            if (!items.length) return null;
-            const Icon = group.icon;
-            return (
-              <div key={group.kind}>
-                <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted">
-                  <Icon className={`size-4 ${group.tone}`} aria-hidden /> {group.title} · {items.length}
-                </h2>
+        <>
+          <div role="tablist" aria-label="Tipo de padrão" className="mb-4 inline-flex flex-wrap gap-1 rounded-xl bg-surface-2 p-1 ring-1 ring-border">
+            {KINDS.map(({ kind, tab: short, icon: Icon, color }) => (
+              <button
+                key={kind}
+                type="button"
+                role="tab"
+                aria-selected={tab === kind}
+                onClick={() => setTab(kind)}
+                className={`flex items-center gap-2 whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium transition ${tab === kind ? "bg-surface shadow-sm ring-1 ring-border" : "text-foreground/70 hover:text-foreground"}`}
+              >
+                <Icon className="size-4" style={{ color }} aria-hidden />
+                {short}
+                <span className="tabular-nums text-muted">{byKind(kind).length}</span>
+              </button>
+            ))}
+          </div>
+          {KINDS.filter(({ kind }) => kind === tab).map((info) => (
+            <div key={info.kind} role="tabpanel">
+              <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted">{info.label}</h2>
+              {byKind(info.kind).length ? (
                 <div className="grid gap-4 lg:grid-cols-2">
-                  {items.map((pattern) => <PatternCard key={pattern.id} pattern={pattern} />)}
+                  {byKind(info.kind).map((p) => <PatternCard key={p.id} pattern={p} info={info} />)}
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              ) : (
+                <p className="text-sm text-muted">Nenhum padrão neste grupo.</p>
+              )}
+            </div>
+          ))}
+        </>
       )}
     </Section>
   );
