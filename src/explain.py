@@ -1,8 +1,9 @@
 """Turn model metrics and factors into a plain-language explanation for the client.
 
-    python -m src.explain
+    python -m src.explain                 # calls the API with the ANTHROPIC_API_KEY from .env
+    python -m src.explain --prompt-only   # writes the prompt for any assistant (e.g. /explicar)
 
-Sends only aggregated results (metrics, factor importance, group averages). Never rows.
+Uses only aggregated results (metrics, factor importance, group averages). Never rows.
 """
 import json
 import os
@@ -15,6 +16,7 @@ import config
 
 MODEL = "claude-opus-5-5"
 OUTPUT = config.ARTIFACTS / "explanation.md"
+PROMPT_OUTPUT = config.ARTIFACTS / "explain_prompt.md"
 
 SYSTEM = """Você é um analista de negócio explicando o resultado de um modelo preditivo para
 o cliente que vai tomar a decisão. O leitor não é técnico.
@@ -55,8 +57,11 @@ def main():
     sys.stdout.reconfigure(encoding="utf-8")
     if not (config.ARTIFACTS / "metrics.json").exists():
         sys.exit("Rode `python -m src.train` antes.")
-    if not (os.getenv("ANTHROPIC_API_KEY") or os.getenv("ANTHROPIC_AUTH_TOKEN")):
-        print("ANTHROPIC_API_KEY ausente no .env: explicacao nao gerada (o restante do pipeline segue).")
+    has_key = os.getenv("ANTHROPIC_API_KEY") or os.getenv("ANTHROPIC_AUTH_TOKEN")
+    if "--prompt-only" in sys.argv or not has_key:
+        PROMPT_OUTPUT.write_text(f"{SYSTEM}\n\n---\n\n{build_prompt()}\n", encoding="utf-8")
+        print(f"Prompt salvo em {PROMPT_OUTPUT}.")
+        print(f"Gere a explicacao com /explicar no Claude Code ou cole o prompt e salve em {OUTPUT}.")
         return
 
     client = anthropic.Anthropic()

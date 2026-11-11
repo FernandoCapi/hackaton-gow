@@ -32,7 +32,7 @@ docker compose up -d --wait                  # Postgres em localhost:5432 (hacka
 python scripts/restore_db.py dumps/<arquivo> # restaura o banco do desafio (recria o banco)
 python -m src.profile --save                 # perfil do schema em docs/perfil-banco.md
 python -m src.train                          # modelo baseline + artifacts/
-python -m src.explain                        # explicação para o cliente (precisa de ANTHROPIC_API_KEY)
+python -m src.explain                        # explicação via API (ANTHROPIC_API_KEY); sem chave, gera o prompt para /explicar
 streamlit run app.py                         # painel
 ```
 
@@ -62,6 +62,10 @@ O dataset de exemplo (churn sintético, `scripts/load_sample.py`) serve só de e
 - Previsão sozinha não é entrega: cada resultado vira uma recomendação ("quem abordar, em que
   ordem, por quê"), de preferência com o impacto estimado em reais.
 - Texto para o cliente e para a banca em português simples, sem jargão de ciência de dados.
+- Cada pessoa usa o próprio acesso à IA (assinatura do Claude Code ou chave de API no `.env`
+  local). Nada de credencial compartilhada ou commitada; o fluxo funciona sem chave pelo `/explicar`.
+- Commits no padrão Conventional Commits (`feat:`, `fix:`, `chore:`, `docs:`...), em inglês,
+  sem linha `Co-Authored-By`.
 - A `main` precisa sempre rodar. Commits pequenos; mudança arriscada só depois de commitar a
   versão que funciona. Depois das 15h, apenas correções.
 - Código e nomes em inglês; textos de interface e documentos em português.

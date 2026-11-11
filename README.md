@@ -29,7 +29,7 @@ Banco: `localhost:5432`, usuário, senha e banco `hackaton`.
 python scripts/load_sample.py     # churn sintético em 3 tabelas
 python -m src.profile             # visão geral do schema
 python -m src.train               # modelo baseline, grava artifacts/
-python -m src.explain             # opcional, precisa de ANTHROPIC_API_KEY no .env
+python -m src.explain             # com ANTHROPIC_API_KEY no .env chama a API; sem chave, gera o prompt para /explicar
 streamlit run app.py              # painel em http://localhost:8501
 ```
 
@@ -45,8 +45,14 @@ streamlit run app.py              # painel em http://localhost:8501
 4. Ajuste `config.py`: `TARGET`, `ID_COLUMN`, `DATE_COLUMN`, `TASK`, `DROP_COLUMNS` e os rótulos.
 5. `python -m src.train`, depois `python -m src.explain` e `streamlit run app.py`.
 
-Com Claude Code, os comandos `/kickoff`, `/explorar-banco` e `/pitch` conduzem os passos 1 a
-4 e o roteiro da apresentação.
+Com Claude Code, os comandos `/kickoff`, `/explorar-banco`, `/explicar` e `/pitch` conduzem
+os passos, a explicação para o cliente e o roteiro da apresentação.
+
+## Acesso à IA
+
+Cada pessoa usa o próprio acesso: a assinatura do Claude Code basta para todo o fluxo
+(a explicação sai pelo `/explicar`). Quem tiver chave de API pode colocá-la no próprio `.env`
+para usar `python -m src.explain` direto. Nunca compartilhe nem commite credenciais.
 
 ## Cuidados
 
