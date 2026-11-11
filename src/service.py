@@ -96,7 +96,7 @@ def _current_decisions() -> pd.DataFrame:
     return _decisions(current_policy().params.model_dump_json())
 
 
-COUNTEROFFER_STEPS = ("Capacidade de pagamento", "Risco estimado pela IA")
+COUNTEROFFER_STEPS = (STEP_CAPACITY, STEP_RISK)  # internal step ids, not display titles
 
 
 def _counteroffers() -> pd.DataFrame:
