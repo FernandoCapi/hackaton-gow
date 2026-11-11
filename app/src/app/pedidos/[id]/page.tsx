@@ -1,12 +1,12 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { ArrowDownRight, ArrowLeft, Building2, Check, HandCoins, Landmark, Lightbulb, UserRound, X } from "lucide-react";
+import { ArrowDownRight, ArrowLeft, Building2, Calculator, Check, HandCoins, Landmark, Lightbulb, UserRound, X } from "lucide-react";
 import Link from "next/link";
 import { use } from "react";
 import { api, type OrderDetail } from "@/lib/api";
 import { brl, date, int, pct } from "@/lib/format";
-import { Card, DecisionBadge, ExtraBadge, IconChip, Status } from "@/components/ui";
+import { Card, DecisionBadge, ExtraBadge, IconChip, RuleTag, Status } from "@/components/ui";
 import type { LucideIcon } from "lucide-react";
 
 const STEP_STYLE: Record<OrderDetail["steps"][number]["result"], { icon: LucideIcon; label: string; className: string }> = {
@@ -42,8 +42,46 @@ function RiskGauge({ value, cutoff }: { value: number; cutoff: number }) {
         <div className={`absolute inset-y-0 left-0 rounded-full ${color}`} style={{ width: `${Math.min(100, value * 100)}%` }} />
         <div className="absolute inset-y-0 w-0.5 bg-foreground/50" style={{ left: `${cutoff * 100}%` }} />
       </div>
-      <p className="mt-1 text-[11px] text-muted">limite da política: {pct(cutoff)}</p>
+      <p className="mt-1 text-[11px] text-muted">limite da regra nova: {pct(cutoff)}</p>
     </div>
+  );
+}
+
+function ExplainCard({ o }: { o: OrderDetail }) {
+  if (!o.explain?.length) return null;
+  return (
+    <Card>
+      <div className="flex items-start gap-3">
+        <IconChip icon={Calculator} />
+        <div>
+          <h2 className="font-medium">Como chegamos nestes números</h2>
+          <p className="text-sm text-muted">Cada conta por extenso, com os valores deste pedido e o limite de cada regra.</p>
+        </div>
+      </div>
+      <ol className="mt-4 grid gap-3">
+        {o.explain.map((line, i) => (
+          <li key={line.label} className="grid gap-2 rounded-lg border border-border bg-surface-2 p-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+            <div className="min-w-0">
+              <p className="flex flex-wrap items-center gap-2 text-sm font-medium">
+                <span className="text-muted">{i + 1}.</span> {line.label}
+                {line.rule === "nova" && <RuleTag kind="nova" />}
+                {line.rule === "antiga" && <RuleTag kind="antiga" />}
+              </p>
+              <p className="mt-1 text-sm text-muted">{line.formula}</p>
+            </div>
+            <div className="flex items-center gap-3 md:justify-end">
+              {line.limit && (
+                <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${line.passes ? "bg-good/10 text-good" : "bg-critical/10 text-critical"}`}>
+                  {line.passes ? <Check className="size-3" strokeWidth={3} aria-hidden /> : <X className="size-3" strokeWidth={3} aria-hidden />}
+                  {line.limit}
+                </span>
+              )}
+              <span className="min-w-24 text-right text-lg font-semibold tabular-nums">{line.result}</span>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </Card>
   );
 }
 
@@ -90,11 +128,11 @@ export default function OrderPage({ params }: { params: Promise<{ id: string }> 
         <div className="mt-4 grid gap-4">
           <Card className={`border-l-4 ${approved ? "border-l-good" : "border-l-critical"}`}>
             <div className="flex flex-wrap items-start gap-x-10 gap-y-4">
-              <div><p className="text-xs uppercase tracking-wide text-muted">Decisão sugerida</p><div className="mt-1 scale-110 origin-left"><DecisionBadge decision={o.decision} /></div></div>
-              <div><p className="text-xs uppercase tracking-wide text-muted">Valor aprovado</p><p className="text-2xl font-semibold tabular-nums">{brl(o.approved_amount)}</p></div>
-              <div><p className="text-xs uppercase tracking-wide text-muted">Pedido</p><p className="text-lg tabular-nums">{brl(o.requested_amount)} em {o.term_months}x</p></div>
+              <div><p className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted">Decisão <RuleTag kind="nova" /></p><div className="mt-1 scale-110 origin-left"><DecisionBadge decision={o.decision} /></div></div>
+              <div><p className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted">Valor aprovado <RuleTag kind="nova" /></p><p className="text-2xl font-semibold tabular-nums">{brl(o.approved_amount)}</p></div>
+              <div><p className="text-xs uppercase tracking-wide text-muted">Pedido do cliente</p><p className="text-lg tabular-nums">{brl(o.requested_amount)} em {o.term_months}x</p></div>
               <div><p className="text-xs uppercase tracking-wide text-muted">Chance de calote</p><p className="text-lg font-medium tabular-nums">{pct(o.default_risk)}</p><RiskGauge value={o.default_risk} cutoff={cutoff} /></div>
-              <div><p className="text-xs uppercase tracking-wide text-muted">Regra antiga</p><p className="mt-1 flex items-center gap-2"><DecisionBadge decision={o.current_decision} subtle /> <span className="text-sm tabular-nums">{brl(o.current_approved_amount)}</span></p></div>
+              <div><p className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted">Decisão <RuleTag kind="antiga" /></p><p className="mt-1 flex items-center gap-2"><DecisionBadge decision={o.current_decision} subtle /> <span className="text-sm tabular-nums">{brl(o.current_approved_amount)}</span></p></div>
             </div>
             <div className="mt-5 rounded-lg bg-surface-2 p-4">
               <h2 className="flex items-center gap-2 font-medium"><Lightbulb className="size-4 text-gold" aria-hidden /> Por quê</h2>
@@ -108,8 +146,10 @@ export default function OrderPage({ params }: { params: Promise<{ id: string }> 
 
           <CounterofferCard o={o} />
 
+          <ExplainCard o={o} />
+
           <Card>
-            <h2 className="mb-4 font-medium">Passos da política aplicados</h2>
+            <h2 className="mb-4 flex items-center gap-2 font-medium">Passos da regra nova aplicados <RuleTag kind="nova" /></h2>
             <ol className="relative grid gap-3 pl-10 before:absolute before:top-1 before:bottom-1 before:left-[13px] before:w-0.5 before:bg-border">
               {o.steps.map((s) => {
                 const style = STEP_STYLE[s.result];
@@ -133,8 +173,9 @@ export default function OrderPage({ params }: { params: Promise<{ id: string }> 
               ["Data do pedido", date(o.order_date)],
               ["Ocupação", o.employment_type],
               ["Renda declarada", brl(o.income_declared)],
-              ["Parcela", brl(o.installment)],
-              ["Comprometimento da renda", pct(o.income_commitment)],
+              ...(o.effective_income != null ? [["Renda efetiva (o que entra na conta)", brl(o.effective_income)] as [string, string]] : []),
+              [approved ? "Parcela do valor aprovado" : "Parcela do valor pedido", brl(o.installment)],
+              ["Comprometimento da renda efetiva", pct(o.income_commitment)],
             ]} />
             <Facts title="Bureau" icon={Building2} rows={[
               ["Score", int(o.bureau.score)],

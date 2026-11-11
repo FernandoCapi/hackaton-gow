@@ -25,7 +25,7 @@ export default function Overview() {
             <p className="flex items-center gap-2 text-sm text-white/75"><TrendingUp className="size-4" aria-hidden /> Ganho esperado sobre a regra antiga</p>
             <p className="mt-2 text-4xl font-semibold tracking-tight tabular-nums md:text-5xl">{brl(data.gain)}</p>
             <p className="mt-2 text-sm text-white/75">
-              {brl(data.proposed_policy.expected_result)} com a política proposta, contra {brl(data.current_policy.expected_result)} da regra antiga
+              {brl(data.proposed_policy.expected_result)} com a regra nova, contra {brl(data.current_policy.expected_result)} da regra antiga
               {" "}(+15% pago em dia, +5% com atraso, −60% sem pagamento).
             </p>
             <div className="mt-5 flex flex-wrap gap-2 text-xs">
@@ -35,10 +35,10 @@ export default function Overview() {
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <Stat icon={BadgeCheck} tone="good" label="Aprovados pela proposta" value={int(data.proposed_policy.approved)} hint={`Regra antiga: ${int(data.current_policy.approved)} de ${int(data.new_orders_total)}`} />
-            <Stat icon={Banknote} tone="gold" label="Valor aprovado" value={brl(data.proposed_policy.approved_amount)} hint={`Regra antiga: ${brl(data.current_policy.approved_amount)}`} />
+            <Stat icon={BadgeCheck} tone="good" label="Aprovados pela regra nova" value={int(data.proposed_policy.approved)} hint={`Regra antiga: ${int(data.current_policy.approved)} de ${int(data.new_orders_total)}`} />
+            <Stat icon={Banknote} tone="gold" label="Valor aprovado pela regra nova" value={brl(data.proposed_policy.approved_amount)} hint={`Regra antiga: ${brl(data.current_policy.approved_amount)}`} />
             <Stat icon={ShieldAlert} tone="critical" label="Inadimplência histórica" value={pct(data.base_default_rate)} hint={`${int(data.historical_mature_total)} contratos com 12+ meses`} />
-            <Stat icon={Target} label="Negados pela proposta" value={int(data.proposed_policy.denied)} hint={`Regra antiga: ${int(data.current_policy.denied)}`} />
+            <Stat icon={Target} label="Negados pela regra nova" value={int(data.proposed_policy.denied)} hint={`Regra antiga: ${int(data.current_policy.denied)}`} />
           </div>
 
           <div className="grid gap-4 md:grid-cols-3">

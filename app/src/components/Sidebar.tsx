@@ -12,7 +12,7 @@ import ThemeToggle from "./ThemeToggle";
 const SECTIONS = [
   { href: "/", label: "Visão geral", icon: LayoutDashboard },
   { href: "/padroes", label: "Padrões encontrados", icon: Search },
-  { href: "/politica", label: "Política proposta", icon: Scale },
+  { href: "/politica", label: "Regra nova (política)", icon: Scale },
   { href: "/laboratorio", label: "Laboratório", icon: FlaskConical },
   { href: "/pedidos", label: "Pedidos novos", icon: ListChecks },
 ];

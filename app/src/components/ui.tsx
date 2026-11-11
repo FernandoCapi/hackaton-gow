@@ -113,3 +113,14 @@ export function RiskMeter({ value, cutoff }: { value: number; cutoff?: number })
     </span>
   );
 }
+
+/** Same two colors as the charts: teal = new rule (proposed policy), orange = old rule (Fortuna's current one). */
+export function RuleTag({ kind, className = "" }: { kind: "nova" | "antiga"; className?: string }) {
+  const style = kind === "nova" ? "bg-series-1/12 text-series-1 ring-series-1/30" : "bg-series-2/12 text-series-2 ring-series-2/30";
+  return (
+    <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ${style} ${className}`}>
+      <span className={`size-1.5 rounded-full ${kind === "nova" ? "bg-series-1" : "bg-series-2"}`} aria-hidden />
+      {kind === "nova" ? "Regra nova" : "Regra antiga"}
+    </span>
+  );
+}

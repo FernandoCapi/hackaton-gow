@@ -16,7 +16,7 @@ export default function PolicySteps() {
   const { data, isLoading, error } = useQuery({ queryKey: ["policy"], queryFn: api.policy });
   const approvedAt = data?.approved_at ? new Date(data.approved_at).toLocaleString("pt-BR") : null;
   return (
-    <Section icon={Scale} title="Política proposta" subtitle="Aplicada nesta ordem a cada pedido novo: quem pode ser aprovado, o que nega e com qual valor.">
+    <Section icon={Scale} title="Regra nova: política proposta" subtitle="Aplicada nesta ordem a cada pedido novo: quem pode ser aprovado, o que nega e com qual valor.">
       <Status loading={isLoading} error={error} />
       {data && (
         <>

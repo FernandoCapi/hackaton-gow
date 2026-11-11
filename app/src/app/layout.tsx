@@ -3,6 +3,7 @@ import { IBM_Plex_Sans } from "next/font/google";
 import Providers from "./providers";
 import Sidebar from "@/components/Sidebar";
 import StatusBanner from "@/components/StatusBanner";
+import RulesLegend from "@/components/RulesLegend";
 import "./globals.css";
 
 const plex = IBM_Plex_Sans({ variable: "--font-plex", subsets: ["latin"], weight: ["400", "500", "600"] });
@@ -26,7 +27,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             <div className="min-w-0 flex-1">
               {/* mobile only: the sidebar footer with the data status is hidden on small screens */}
               <div className="md:hidden"><StatusBanner /></div>
-              <main className="mx-auto max-w-6xl px-4 py-6 md:px-8 md:py-8">{children}</main>
+              <main className="mx-auto max-w-6xl px-4 py-6 md:px-8 md:py-8"><RulesLegend />{children}</main>
             </div>
           </div>
         </Providers>

@@ -39,7 +39,7 @@ export default function OrdersPage() {
   const pages = orders.data ? Math.max(1, Math.ceil(orders.data.total / query.page_size!)) : 1;
 
   return (
-    <Section icon={ListChecks} title="Pedidos novos" subtitle="Decisão sugerida pela política em vigor, comparada com a regra antiga.">
+    <Section icon={ListChecks} title="Pedidos novos" subtitle="Decisão da regra nova (política em vigor) ao lado da decisão que a regra antiga tomaria.">
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <button
           type="button"
@@ -74,7 +74,7 @@ export default function OrdersPage() {
             <label className="grid gap-1 text-sm">Pedido ou cliente
               <input className={select} value={draft.q ?? ""} onChange={(e) => setDraft({ ...draft, q: e.target.value || undefined })} placeholder="P-99001 ou C-99001" />
             </label>
-            <label className="grid gap-1 text-sm">Decisão
+            <label className="grid gap-1 text-sm">Decisão da regra nova
               <select className={select} value={draft.decision ?? ""} onChange={(e) => setDraft({ ...draft, decision: (e.target.value || undefined) as OrderQuery["decision"] })}>
                 <option value="">Todas</option>
                 <option value="APROVADO">Aprovados</option>
@@ -127,10 +127,10 @@ export default function OrdersPage() {
                 <th className="px-3 py-2 font-medium">Pedido</th>
                 <th className="px-3 py-2 font-medium">Data</th>
                 <th className="px-3 py-2 text-right font-medium">Pedido (R$)</th>
-                <th className="px-3 py-2 font-medium">Decisão</th>
-                <th className="px-3 py-2 text-right font-medium">Aprovado (R$)</th>
+                <th className="px-3 py-2 font-medium text-series-1">Regra nova</th>
+                <th className="px-3 py-2 text-right font-medium text-series-1">Valor da regra nova</th>
                 <th className="px-3 py-2 text-right font-medium">Chance de calote</th>
-                <th className="px-3 py-2 font-medium">Regra antiga</th>
+                <th className="px-3 py-2 font-medium text-series-2">Regra antiga</th>
                 <th className="px-3 py-2"><span className="sr-only">Detalhes</span></th>
               </tr>
             </thead>

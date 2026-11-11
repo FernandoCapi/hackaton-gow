@@ -152,8 +152,8 @@ function LabBody({ policy }: { policy: Policy }) {
                     : undefined}
                 />
               )}
-              <Stat icon={BadgeCheck} label="Aprovados" value={int(data.new_orders.approved)} hint={`Regra antiga: ${int(data.new_orders.current_approved)}`} />
-              <Stat icon={RefreshCw} tone="gold" label="Decisões que mudam" value={int(data.new_orders.changed_vs_current)} hint="Em relação à regra antiga" />
+              <Stat icon={BadgeCheck} label="Aprovados pela regra nova" value={int(data.new_orders.approved)} hint={`Regra antiga: ${int(data.new_orders.current_approved)}`} />
+              <Stat icon={RefreshCw} tone="gold" label="Decisões diferentes da regra antiga" value={int(data.new_orders.changed_vs_current)} hint="Em relação à regra antiga" />
             </div>
             <h3 className="mb-2 mt-5 text-sm font-medium text-muted">No histórico (contratos com 12+ meses)</h3>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
