@@ -20,6 +20,7 @@ dados, time). Alimenta a "defesa das escolhas" e o "que mudou depois do checkpoi
 | 11/11 manhã | Fora do que o piloto testou (score ≤ 450, renda ≤ 1.500) **nega** | Sem evidência; o modelo aprovaria mais (+R$ 72 mil estimado), mas seria extrapolação | Dados |
 | 11/11 manhã | Regra de valor padrão: **valor pedido ou nega** | No histórico rende mais (+R$ 1,11 mi × +R$ 0,80 mi reduzindo); redução profunda não tem dados | Dados (avaliação) |
 | 11/11 manhã | Cortes de risco 15% (quem a atual aprovaria) e 12% (quem ela negaria) | Ganho no histórico estável entre 12% e 17%; no piloto, os aprovados pela expansão tiveram 3,9% de calote | Dados (avaliação) |
+| 11/11 manhã | Alvo do modelo mantido em **contratos com 12+ meses**. Testado o alvo "calote nos 9 primeiros meses", que traria 560 contratos do piloto para o treino, e descartado | Mesma régua: AUC em maduros nunca vistos 0,797 × 0,772; em clientes do piloto que a atual negaria 0,903 × 0,891; ganho no histórico R$ 1,11 mi × R$ 1,13 mi (dentro do ruído). Incluir o piloto não melhora onde importa | Dados (teste do Davi) |
 
 ## Perguntas para o cliente (janela de dúvidas)
 
