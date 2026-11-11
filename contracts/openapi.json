@@ -670,7 +670,7 @@
           "good_customers_gained": {
             "type": "integer",
             "title": "Good Customers Gained",
-            "description": "Bons pagadores que a atual negaria e a proposta aprova"
+            "description": "No piloto (única evidência sobre quem a atual nega): clientes que a atual negaria, a proposta aprova e que não deram calote até agora (contratos de 6 a 12 meses, calote ainda parcial)"
           }
         },
         "additionalProperties": false,

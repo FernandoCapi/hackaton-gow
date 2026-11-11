@@ -9,7 +9,7 @@ import pandas as pd
 from sklearn.metrics import roc_auc_score
 
 import config
-from src.policy import RiskGrid, current_policy, decision_steps, proposed_policy, reasons
+from src.policy import current_policy, decision_steps, proposed_policy, reasons
 from src.schemas import PolicyParams
 from src.simulate import OUTCOME_RATE, Engine, official_result
 
@@ -193,9 +193,8 @@ a um valor menor.
 
 def section_pilot(engine: Engine) -> str:
     """Pilot loans are younger than 12 months, so the final model never saw them."""
-    o = engine.orders
-    pilot = o[o.politica_aplicada.eq("piloto") & o.decisao.eq("aprovado")]
-    grid = RiskGrid.build(pilot, engine.predict)
+    grid = engine.pilot_grid
+    pilot = grid.orders
     decisions = proposed_policy(grid, PolicyParams())
     frame = decisions.join(pilot[["calote", "meses_desde_pedido"]])
     rows = []

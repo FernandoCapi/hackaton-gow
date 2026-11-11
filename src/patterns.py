@@ -17,7 +17,7 @@ import numpy as np
 import pandas as pd
 
 from src.features import installment
-from src.policy import STEP_CAPACITY, STEP_DOMAIN, STEP_RISK, STEP_STRAIN, current_policy
+from src.policy import STEP_CAPACITY, STEP_DOMAIN, STEP_RISK, STEP_STRAIN, current_policy, step_title
 from src.schemas import Pattern, PatternGroup
 
 MATURITY_MONTHS = 12
@@ -255,7 +255,7 @@ def _build(spec: Spec, frames: dict[str, pd.DataFrame]) -> Pattern | None:
         ],
         kind=spec.kind,
         new_orders_affected=int(spec.new_mask(new).fillna(False).sum()) if spec.new_mask else None,
-        policy_step=spec.policy_step,
+        policy_step=step_title(spec.policy_step) if spec.policy_step else None,
         evidence=spec.evidence,
         caveat=" ".join(caveats) or None,
     )
