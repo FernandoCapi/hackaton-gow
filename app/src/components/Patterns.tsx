@@ -162,6 +162,19 @@ function PatternCard({ pattern, info }: { pattern: Pattern; info: KindInfo }) {
   );
 }
 
+/** High-default patterns split by what the old rule does: the ones it already denies are where it
+ *  gets it right (and the new rule agrees), not where it loses money. */
+function groupsOf(info: KindInfo, items: Pattern[]): { label: string; items: Pattern[] }[] {
+  if (info.kind !== "risk") return [{ label: info.label, items }];
+  return [
+    { label: info.label, items: items.filter((p) => p.current_policy_view !== "denies") },
+    {
+      label: "Onde a regra antiga acerta: ela já nega, e a regra nova concorda",
+      items: items.filter((p) => p.current_policy_view === "denies"),
+    },
+  ].filter((group) => group.items.length);
+}
+
 export default function Patterns() {
   const { data, isLoading, error } = useQuery({ queryKey: ["patterns"], queryFn: api.patterns });
   const [tab, setTab] = useState<Kind>("risk");
@@ -192,15 +205,19 @@ export default function Patterns() {
             ))}
           </div>
           {KINDS.filter(({ kind }) => kind === tab).map((info) => (
-            <div key={info.kind} role="tabpanel">
-              <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted">{info.label}</h2>
-              {byKind(info.kind).length ? (
-                <div className="grid gap-4 lg:grid-cols-2">
-                  {byKind(info.kind).map((p) => <PatternCard key={p.id} pattern={p} info={info} />)}
+            <div key={info.kind} role="tabpanel" className="grid gap-8">
+              {groupsOf(info, byKind(info.kind)).map((group) => (
+                <div key={group.label}>
+                  <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted">{group.label}</h2>
+                  {group.items.length ? (
+                    <div className="grid gap-4 lg:grid-cols-2">
+                      {group.items.map((p) => <PatternCard key={p.id} pattern={p} info={info} />)}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted">Nenhum padrão neste grupo.</p>
+                  )}
                 </div>
-              ) : (
-                <p className="text-sm text-muted">Nenhum padrão neste grupo.</p>
-              )}
+              ))}
             </div>
           ))}
         </>

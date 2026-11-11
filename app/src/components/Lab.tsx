@@ -159,7 +159,7 @@ function LabBody({ policy }: { policy: Policy }) {
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
               <Stat icon={History} tone="good" label="Ganho sobre a regra antiga" value={brl(data.historical.gain)} hint={`${brl(data.historical.proposed_result)} contra ${brl(data.historical.current_result)}`} />
               <Stat icon={ShieldCheck} tone="critical" label="Calotes evitados" value={int(data.historical.defaults_avoided)} hint="Aprovados pela regra antiga que a proposta nega" />
-              <Stat icon={UserPlus} tone="accent" label="Bons clientes ganhos" value={int(data.historical.good_customers_gained)} hint="Negados pela regra antiga que a proposta aprova" />
+              <Stat icon={UserPlus} tone="accent" label="Bons clientes ganhos" value={int(data.historical.good_customers_gained)} hint="No piloto: negados pela regra antiga que a proposta aprova e que não deram calote até agora" />
             </div>
             <StepsImpact impact={data.steps_impact ?? []} />
           </>

@@ -403,6 +403,10 @@ def _pct1(value: float) -> str:
     return f"{value * 100:.1f}".replace(".", ",") + "%"
 
 
+def _restrictions(n: int) -> str:
+    return "nenhuma restrição ativa" if n == 0 else f"{n} {'restrição ativa' if n == 1 else 'restrições ativas'}"
+
+
 def _explain(row: pd.Series, o: pd.Series, p: PolicyParams) -> list[ExplainLine]:
     """Every number on the order page, as a calculation a layperson can follow."""
     from src.features import installment
@@ -430,7 +434,7 @@ def _explain(row: pd.Series, o: pd.Series, p: PolicyParams) -> list[ExplainLine]
                     result=_brl2(parcela)),
         ExplainLine(rule="antiga", label="Score, renda e restrições",
                     formula=f"score {o.score:.0f} (precisa passar de 600) · renda declarada {_brl2(declared)} "
-                            f"(precisa passar de R$ 2.000,00) · {int(o.restricoes_ativas)} restrição(ões) ativa(s) "
+                            f"(precisa passar de R$ 2.000,00) · {_restrictions(int(o.restricoes_ativas))} "
                             f"(precisa ser 0)",
                     result="passa" if bool(o.score > 600 and declared > 2000 and o.restricoes_ativas == 0) else "não passa",
                     limit="Regra antiga exige os três",

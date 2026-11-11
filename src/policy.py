@@ -42,6 +42,11 @@ def step_title(step: str, params: PolicyParams | None = None) -> str:
     }[step]
 
 
+def times(value: float) -> str:
+    """Multiplier in Brazilian format: 28,4x."""
+    return f"{value:.1f}".replace(".", ",") + "x"
+
+
 def pct(value: float) -> str:
     """Percent in Brazilian format: one decimal below 10% ("6,5%"), whole above ("25%")."""
     text = f"{value * 100:.1f}" if abs(value) < 0.10 else f"{value * 100:.0f}"
@@ -236,7 +241,7 @@ def decision_steps(row: pd.Series, o: pd.Series, p: PolicyParams) -> list[dict]:
         if o.cheque_recente_meses > p.max_recent_overdraft_months:
             problems.append(f"cheque especial em {o.cheque_recente_meses} dos 3 meses antes do pedido")
         if o.dreno >= p.max_drain:
-            problems.append(f"saída recente {o.dreno:.1f}x maior que a típica (conta esvaziada)")
+            problems.append(f"saída recente {times(o.dreno)} maior que a típica (conta esvaziada)")
         if o.entradas_sobre_renda < p.min_inflow_ratio:
             problems.append(f"entradas cobrem só {pct(o.entradas_sobre_renda)} da renda declarada")
         if o.consultas_90_dias > p.max_inquiries_90d:
@@ -281,7 +286,7 @@ def reasons(o: pd.Series) -> list[str]:
     if o.cheque_recente_meses >= 1:
         facts.append(f"Cheque especial em {o.cheque_recente_meses} dos 3 meses antes do pedido")
     if o.dreno >= 3:
-        facts.append(f"Saída recente {o.dreno:.1f}x maior que a típica")
+        facts.append(f"Saída recente {times(o.dreno)} maior que a típica")
     if o.consultas_90_dias >= 5:
         facts.append(f"{o.consultas_90_dias:.0f} consultas ao CPF nos últimos 90 dias")
     if o.entradas_sobre_renda < 0.8:
