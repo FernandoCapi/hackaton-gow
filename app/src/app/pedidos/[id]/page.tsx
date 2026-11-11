@@ -46,7 +46,7 @@ export default function OrderPage({ params }: { params: Promise<{ id: string }> 
               <div><p className="text-sm text-muted">Valor aprovado</p><p className="text-xl font-semibold tabular-nums">{brl(o.approved_amount)}</p></div>
               <div><p className="text-sm text-muted">Pedido</p><p className="tabular-nums">{brl(o.requested_amount)} em {o.term_months}x</p></div>
               <div><p className="text-sm text-muted">Chance de calote</p><p className="tabular-nums">{pct(o.default_risk)}</p></div>
-              <div><p className="text-sm text-muted">Regra antiga</p><p><DecisionBadge decision={o.current_decision} /> <span className="text-sm tabular-nums">{brl(o.current_approved_amount)}</span></p></div>
+              <div><p className="text-sm text-muted">Regra antiga</p><p><DecisionBadge decision={o.current_decision} subtle /> <span className="text-sm tabular-nums">{brl(o.current_approved_amount)}</span></p></div>
             </div>
             <h2 className="mt-4 font-medium">Por quê</h2>
             <ul className="mt-1 list-disc pl-5 text-sm">{o.reasons.map((r) => <li key={r}>{r}</li>)}</ul>

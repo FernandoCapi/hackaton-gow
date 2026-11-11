@@ -28,10 +28,14 @@ export function Status({ loading, error }: { loading: boolean; error: Error | nu
   return null;
 }
 
-export function DecisionBadge({ decision }: { decision: "APROVADO" | "NEGADO" }) {
+/** `subtle` (outline only) is for reference values like the old rule, so the suggested decision stands out. */
+export function DecisionBadge({ decision, subtle = false }: { decision: "APROVADO" | "NEGADO"; subtle?: boolean }) {
   const approved = decision === "APROVADO";
+  const tone = approved
+    ? subtle ? "border-good/40 text-good" : "border-transparent bg-good/15 text-good"
+    : subtle ? "border-critical/40 text-critical" : "border-transparent bg-critical/15 text-critical";
   return (
-    <span className={`inline-flex items-center gap-1 text-sm font-medium ${approved ? "text-good" : "text-critical"}`}>
+    <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-xs font-medium ${tone}`}>
       <span aria-hidden>{approved ? "✓" : "✕"}</span>
       {approved ? "Aprovado" : "Negado"}
     </span>
