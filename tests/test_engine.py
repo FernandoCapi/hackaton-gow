@@ -32,10 +32,31 @@ def engine():
 
 def test_current_policy_reproduces_history(engine):
     hist = engine.orders[engine.orders.politica_aplicada.eq("atual")]
-    current = current_policy(hist)
+    current = current_policy(hist, reduce_amount=True)
     assert (current.current_decision.str.lower() == hist.decisao).all()
     approved = hist.decisao.eq("aprovado")
     assert (current.current_amount[approved] - hist.valor_aprovado[approved]).abs().max() < 0.5
+
+
+def test_current_rule_denies_when_installment_does_not_fit(engine):
+    # Fortuna (answer 3): today's rule is yes or no; it never approves a smaller amount.
+    from src.features import installment
+
+    o = engine.orders
+    current = current_policy(o)
+    approved = current.current_decision.eq("APROVADO")
+    assert (current.current_amount[approved] == o.valor_solicitado[approved]).all()
+    too_big = current.current_eligible & (installment(o.valor_solicitado, o.prazo_meses) > 0.30 * o.renda_declarada)
+    assert too_big.any() and current.current_decision[too_big].eq("NEGADO").all()
+
+
+def test_reference_numbers_against_the_rule_that_denies(engine):
+    # Numbers the team checked by hand and quotes in the pitch.
+    result = engine.simulate(PolicyParams(), with_steps=False)
+    assert result.new_orders.current_approved == 1084
+    assert result.new_orders.approved == 1232
+    assert result.historical.gain == pytest.approx(416_658, abs=1)
+    assert result.new_orders.expected_gain == pytest.approx(263_552, abs=1)
 
 
 def test_smaller_amount_never_raises_risk(engine):

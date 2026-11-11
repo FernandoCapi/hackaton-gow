@@ -42,15 +42,22 @@ def table(headers: list[str], rows: list[list]) -> str:
 
 def section_ruler(engine: Engine) -> str:
     hist = engine.orders[engine.orders.politica_aplicada.eq("atual")]
-    current = current_policy(hist)
+    current = current_policy(hist, reduce_amount=True)
     match = (current.current_decision.str.lower() == hist.decisao).mean()
     approved = hist.decisao.eq("aprovado")
     diff = (current.current_amount[approved] - hist.valor_aprovado[approved]).abs().max()
     example = official_result([10000, 6000, 5000, 0], ["quitado_em_dia", "quitado_com_atraso", "inadimplente", "inadimplente"])
+    mature = engine.hist_grid.orders
+    cut = mature.valor_aprovado < mature.valor_solicitado - 0.005
     return f"""## 1. A régua está certa?
 
 - A política atual, reescrita em código, reproduz **{pct(match)}** das {num(len(hist))} decisões
-  históricas tomadas por ela (diferença máxima de valor: R$ {dec(diff)}, arredondamento).
+  históricas tomadas por ela (diferença máxima de valor: R$ {dec(diff)}, arredondamento). No histórico,
+  quando a parcela passava de 30% da renda, o valor aparece cortado até caber.
+- **A régua de comparação é a regra que nega.** A Fortuna confirmou que hoje a regra é "sim ou não":
+  quando a parcela do valor pedido passa de 30% da renda, nega. Todas as comparações deste relatório,
+  do painel e da API usam essa regra. Ela tira da conta da política atual os {num(int(cut.sum()))} contratos
+  maduros que tiveram o valor cortado ({pct(float(mature.calote[cut].mean()))} de calote).
 - O pontuador aplica a regra do manual: o exemplo de 4 pedidos dá **{brl(example)}** (manual: −R$ 1.200).
 - Como cada desfecho histórico vale na simulação (por real aprovado):
   em dia {pct(OUTCOME_RATE['quitado_em_dia'], 0)}, quitado com atraso {pct(OUTCOME_RATE['quitado_com_atraso'], 0)},
@@ -100,8 +107,33 @@ def section_backtest(engine: Engine, result) -> str:
     )
     bands = table(
         ["Risco previsto", "Contratos", "Calote observado", "Atual", "Proposta"],
-        [[b.band, b.orders, pct(b.observed_default_rate), brl(b.current_result), brl(b.proposed_result)]
+        [[b.band, num(b.orders), pct(b.observed_default_rate), brl(b.current_result), brl(b.proposed_result)]
          for b in result.by_risk_band],
+    )
+    d = engine.decide_new(result.params)
+    ours, theirs = d.decision.eq("APROVADO"), d.current_decision.eq("APROVADO")
+    effect = lambda m: float(d.expected_profit[m].sum() - d.current_expected_profit[m].sum())
+    gain_sources = table(
+        ["Grupo", "Pedidos", "Efeito no resultado", "Risco médio de calote"],
+        [
+            ["Aprovamos quem a regra atual nega", num(int((ours & ~theirs).sum())), brl(effect(ours & ~theirs)),
+             pct(float(d.default_risk[ours & ~theirs].mean()))],
+            ["Negamos quem a regra atual aprova", num(int((~ours & theirs).sum())),
+             f"evita {brl(effect(~ours & theirs))}", pct(float(d.current_risk[~ours & theirs].mean()))],
+            ["As duas aprovam", num(int((ours & theirs).sum())), brl(effect(ours & theirs)),
+             pct(float(d.default_risk[ours & theirs].mean()))],
+        ],
+    )
+    weighted = lambda risk, amount, m: float((risk[m] * amount[m]).sum() / amount[m].sum())
+    portfolio = table(
+        ["Carteira aprovada (novos)", "Política atual", "Proposta"],
+        [
+            ["Aprovação", f"{num(int(theirs.sum()))} ({pct(float(theirs.mean()))})",
+             f"{num(int(ours.sum()))} ({pct(float(ours.mean()))})"],
+            ["Calote esperado (por pedido)", pct(float(d.current_risk[theirs].mean())), pct(float(d.default_risk[ours].mean()))],
+            ["Calote esperado (ponderado pelo valor)", pct(weighted(d.current_risk, d.current_amount, theirs)),
+             pct(weighted(d.default_risk, d.approved_amount, ours))],
+        ],
     )
     return f"""## 3. Quanto ganhamos e de onde vem?
 
@@ -129,6 +161,12 @@ Por faixa de risco previsto:
 | **Ganho esperado** | | **{brl(n.expected_gain)}** |
 
 {n.changed_vs_current} dos 2.000 pedidos têm decisão ou valor diferente da política atual.
+
+**De onde vem o ganho nos pedidos novos:**
+
+{gain_sources}
+
+{portfolio}
 
 **Quanto vale cada passo** (quanto o resultado mudaria sem ele; negativo = o passo protege dinheiro):
 

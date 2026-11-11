@@ -59,12 +59,22 @@ def expected_rate(p_default, late_rate):
 # --- current policy -------------------------------------------------------------------
 
 
-def current_policy(df: pd.DataFrame) -> pd.DataFrame:
-    """Fortuna's rule: score > 600, income > 2,000, no restriction; the amount is the
-    requested one or the largest whose installment fits 30% of the declared income."""
+def current_policy(df: pd.DataFrame, reduce_amount: bool = False) -> pd.DataFrame:
+    """Fortuna's rule: score > 600, income > 2,000, no active restriction and installment of the
+    requested amount up to 30% of the declared income.
+
+    Default (reduce_amount=False): yes or no, as Fortuna confirmed for today's rule — approves
+    the requested amount when it fits, denies otherwise. This is the baseline of every comparison.
+    reduce_amount=True reproduces the historical data, where the amount was cut down to the
+    largest that fits 30%; it is used only to prove the rule is reproduced 100%.
+    """
     eligible = (df.score > 600) & (df.renda_declarada > 2000) & (df.restricoes_ativas == 0)
     fits = max_amount_for_installment(0.30 * df.renda_declarada, df.prazo_meses)
-    amount = np.floor(np.minimum(df.valor_solicitado, fits) * 100) / 100
+    if reduce_amount:
+        amount = np.floor(np.minimum(df.valor_solicitado, fits) * 100) / 100
+    else:
+        amount = np.where(installment(df.valor_solicitado, df.prazo_meses) <= 0.30 * df.renda_declarada,
+                          df.valor_solicitado, 0.0)
     approve = eligible & (amount >= MIN_AMOUNT)
     return pd.DataFrame(
         {

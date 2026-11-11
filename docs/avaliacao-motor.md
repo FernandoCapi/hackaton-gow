@@ -6,7 +6,12 @@ Casos individuais para conferência: `artifacts/casos.md` (local, fora do git).
 ## 1. A régua está certa?
 
 - A política atual, reescrita em código, reproduz **100,0%** das 8.737 decisões
-  históricas tomadas por ela (diferença máxima de valor: R$ 0,11, arredondamento).
+  históricas tomadas por ela (diferença máxima de valor: R$ 0,11, arredondamento). No histórico,
+  quando a parcela passava de 30% da renda, o valor aparece cortado até caber.
+- **A régua de comparação é a regra que nega.** A Fortuna confirmou que hoje a regra é "sim ou não":
+  quando a parcela do valor pedido passa de 30% da renda, nega. Todas as comparações deste relatório,
+  do painel e da API usam essa regra. Ela tira da conta da política atual os 177 contratos
+  maduros que tiveram o valor cortado (55,9% de calote).
 - O pontuador aplica a regra do manual: o exemplo de 4 pedidos dá **−R$ 1.200** (manual: −R$ 1.200).
 - Como cada desfecho histórico vale na simulação (por real aprovado):
   em dia 15%, quitado com atraso 5%,
@@ -50,32 +55,46 @@ modelo que não o viu no treino:
 
 | | Política atual | Proposta |
 |---|---|---|
-| Aprovados | 2.832 | 2.291 |
-| Resultado (+15% / +5% / −60%) | −R$ 229.820 | R$ 884.754 |
-| **Ganho** | | **R$ 1.114.574** |
+| Aprovados | 2.655 | 2.291 |
+| Resultado (+15% / +5% / −60%) | R$ 468.096 | R$ 884.754 |
+| **Ganho** | | **R$ 416.658** |
 
-A proposta evitaria 221 calotes que a política atual aprovou.
+A proposta evitaria 122 calotes que a política atual aprovou.
 
 Por faixa de risco previsto:
 
 | Risco previsto | Contratos | Calote observado | Atual | Proposta |
 |---|---|---|---|---|
 | 0–5% | 665 | 6,6% | R$ 246.869 | R$ 249.089 |
-| 5–10% | 1300 | 6,9% | R$ 567.886 | R$ 558.076 |
+| 5–10% | 1.300 | 6,9% | R$ 567.886 | R$ 558.076 |
 | 10–15% | 371 | 12,1% | R$ 68.086 | R$ 77.589 |
-| 15–20% | 152 | 15,8% | R$ 2.567 | R$ 0 |
-| 20–30% | 87 | 19,5% | −R$ 32.030 | R$ 0 |
-| 30–100% | 257 | 65,4% | −R$ 1.083.198 | R$ 0 |
+| 15–20% | 152 | 15,8% | −R$ 3.770 | R$ 0 |
+| 20–30% | 87 | 19,5% | −R$ 9.796 | R$ 0 |
+| 30–100% | 257 | 65,4% | −R$ 401.179 | R$ 0 |
 
 **Pedidos novos (estimado pelo modelo)** — a melhor previsão da nota de 40%:
 
 | | Política atual | Proposta |
 |---|---|---|
-| Aprovados | 1.145 | 1.232 |
-| Resultado esperado | R$ 150.021 | R$ 630.950 |
-| **Ganho esperado** | | **R$ 480.928** |
+| Aprovados | 1.084 | 1.232 |
+| Resultado esperado | R$ 367.398 | R$ 630.950 |
+| **Ganho esperado** | | **R$ 263.552** |
 
-493 dos 2.000 pedidos têm decisão ou valor diferente da política atual.
+432 dos 2.000 pedidos têm decisão ou valor diferente da política atual.
+
+**De onde vem o ganho nos pedidos novos:**
+
+| Grupo | Pedidos | Efeito no resultado | Risco médio de calote |
+|---|---|---|---|
+| Aprovamos quem a regra atual nega | 290 | R$ 117.409 | 7,8% |
+| Negamos quem a regra atual aprova | 142 | evita R$ 146.143 | 32,4% |
+| As duas aprovam | 942 | R$ 0 | 7,1% |
+
+| Carteira aprovada (novos) | Política atual | Proposta |
+|---|---|---|
+| Aprovação | 1.084 (54,2%) | 1.232 (61,6%) |
+| Calote esperado (por pedido) | 10,4% | 7,3% |
+| Calote esperado (ponderado pelo valor) | 11,3% | 7,5% |
 
 **Quanto vale cada passo** (quanto o resultado mudaria sem ele; negativo = o passo protege dinheiro):
 
@@ -97,33 +116,33 @@ Risco máximo de calote (para quem a política atual aprovaria):
 
 | Valor | Ganho no histórico | Aprovados (novos) | Ganho esperado (novos) |
 |---|---|---|---|
-| 8% | R$ 906.282 | 805 | R$ 317.444 |
-| 10% | R$ 1.036.985 | 1041 | R$ 421.024 |
-| 12% | R$ 1.117.182 | 1167 | R$ 463.516 |
-| 15% | R$ 1.114.574 | 1232 | R$ 480.928 |
-| 17% | R$ 1.101.730 | 1264 | R$ 483.864 |
-| 20% | R$ 1.098.495 | 1270 | R$ 483.896 |
-| 25% | R$ 1.098.495 | 1270 | R$ 483.896 |
+| 8% | R$ 208.366 | 805 | R$ 100.068 |
+| 10% | R$ 339.069 | 1041 | R$ 203.647 |
+| 12% | R$ 419.266 | 1167 | R$ 246.140 |
+| 15% | R$ 416.658 | 1232 | R$ 263.552 |
+| 17% | R$ 403.814 | 1264 | R$ 266.487 |
+| 20% | R$ 400.579 | 1270 | R$ 266.519 |
+| 25% | R$ 400.579 | 1270 | R$ 266.519 |
 
 Teto da parcela sobre a renda efetiva:
 
 | Valor | Ganho no histórico | Aprovados (novos) | Ganho esperado (novos) |
 |---|---|---|---|
-| 15% | R$ 895.737 | 1063 | R$ 387.614 |
-| 20% | R$ 1.040.776 | 1182 | R$ 449.430 |
-| 25% | R$ 1.114.574 | 1232 | R$ 480.928 |
-| 30% | R$ 1.123.934 | 1242 | R$ 489.181 |
-| 35% | R$ 1.123.934 | 1242 | R$ 489.181 |
+| 15% | R$ 197.821 | 1063 | R$ 170.237 |
+| 20% | R$ 342.860 | 1182 | R$ 232.053 |
+| 25% | R$ 416.658 | 1232 | R$ 263.552 |
+| 30% | R$ 426.018 | 1242 | R$ 271.804 |
+| 35% | R$ 426.018 | 1242 | R$ 271.804 |
 
 Risco máximo para quem a política atual negaria (0% = não expandir):
 
 | Valor | Aprovados (novos) | Ganho esperado (novos) |
 |---|---|---|
-| 0% | 942 | R$ 363.519 |
-| 8% | 1105 | R$ 435.410 |
-| 10% | 1188 | R$ 467.154 |
-| 12% | 1232 | R$ 480.928 |
-| 15% | 1263 | R$ 487.967 |
+| 0% | 942 | R$ 146.143 |
+| 8% | 1105 | R$ 218.034 |
+| 10% | 1188 | R$ 249.777 |
+| 12% | 1232 | R$ 263.552 |
+| 15% | 1263 | R$ 270.591 |
 
 Leitura: o ganho deve variar pouco perto dos valores escolhidos. Se o melhor resultado estivesse num
 extremo da tabela, a régua estaria errada.
@@ -132,8 +151,8 @@ extremo da tabela, a régua estaria errada.
 
 | Regra | Ganho no histórico | Aprovados (novos) | Volume (novos) | Ganho esperado (novos) |
 |---|---|---|---|---|
-| Valor pedido ou nega | R$ 1.114.574 | 1232 | R$ 8.516.200 | R$ 480.928 |
-| Reduzir até caber | R$ 796.543 | 1412 | R$ 9.547.260 | R$ 549.785 |
+| Valor pedido ou nega | R$ 416.658 | 1232 | R$ 8.516.200 | R$ 263.552 |
+| Reduzir até caber | R$ 98.627 | 1412 | R$ 9.547.260 | R$ 332.409 |
 
 Ressalva: no histórico, quem teve o valor reduzido ficou com parcela em 30% exatos da renda e deu 56% de
 calote; reduções mais fundas quase não existem (5 casos). O ganho de "reduzir" vem do modelo
@@ -145,14 +164,14 @@ a um valor menor.
 O piloto (sorteado, out/2025 a mar/2026) é a única evidência sobre quem a política atual nega. Seus
 1.126 contratos têm de 6 a 12 meses de vida:
 **o calote observado ainda é parcial** (cerca de metade a três quartos do final). O modelo nunca viu
-esses contratos; mesmo assim separa bons e maus com 0,81.
+esses contratos; mesmo assim separa bons e maus com 0,82.
 
 | Grupo do piloto | Contratos | Calote até agora |
 |---|---|---|
 | Atual negaria, proposta aprova | 203 | 3,9% |
-| Atual negaria, proposta nega | 224 | 23,2% |
+| Atual negaria, proposta nega | 271 | 29,5% |
 | Atual aprovaria, proposta aprova | 577 | 4,5% |
-| Atual aprovaria, proposta nega | 122 | 34,4% |
+| Atual aprovaria, proposta nega | 75 | 18,7% |
 
 Leitura: o grupo que a proposta aprova e a atual negaria deve ter calote parecido ou menor que o
 grupo que as duas aprovam. Clientes com restrição ativa ficam negados por padrão: o modelo foi
@@ -184,8 +203,8 @@ definições do motor. Base: contratos com 12+ meses, ou o piloto quando indicad
   - Ressalva: Amostra pequena (14 contratos): usar como sinal, não como prova. Usa o total de entradas, não o salário: autônomos e empresários quase não recebem "salário" na conta.
 - Clientes com parcela acima de 45% da sobra do mês (entradas menos saídas) têm inadimplência de 65%, contra 13,7% da média. Afeta 265 clientes. Pedidos novos no grupo: 245. Passo da política: Nega pelo risco estimado pela IA.
   - Ressalva: Medido no valor pedido. É o sinal mais forte do modelo de risco.
-- Clientes com pedido acima da capacidade, aprovado com valor cortado pela regra dos 30% têm inadimplência de 56%, contra 13,7% da média. Afeta 177 clientes. Pedidos novos no grupo: 61. Passo da política: Nega quando a parcela não cabe.
-  - Ressalva: Cortar não resolve: o corte deixa a parcela em exatos 30% da renda. Pedir acima da capacidade já é sinal de aperto.
+- No histórico, pedidos com parcela acima de 30% da renda foram aprovados com o valor cortado e deram 56% de calote, contra 13,7% da média. Afeta 177 clientes. Pedidos novos no grupo: 61. Passo da política: Nega quando a parcela não cabe.
+  - Ressalva: A regra da Fortuna hoje nega esses pedidos, e a nossa política também: cortar não resolveu, porque deixa a parcela em exatos 30% da renda, e pedir acima da capacidade já é sinal de aperto.
 - Clientes com nossa parcela somada às dívidas em outras instituições acima de 44% da renda têm inadimplência de 34%, contra 13,7% da média. Afeta 391 clientes. Pedidos novos no grupo: 323. Passo da política: Nega pelo risco estimado pela IA.
 - Clientes com conta aberta há até 3 meses têm inadimplência de 20%, contra 13,7% da média. Afeta 83 clientes. Pedidos novos no grupo: 113. Passo da política: Nega pelo risco estimado pela IA.
 - Clientes com restrição ativa no bureau têm inadimplência de 20%, contra 10,2% de quem não tem restrição. Afeta 127 clientes. Pedidos novos no grupo: 377. Passo da política: Quem pode ser aprovado.
@@ -193,7 +212,7 @@ definições do motor. Base: contratos com 12+ meses, ou o piloto quando indicad
 
 **Onde a política atual nega quem pagaria**
 
-- Clientes que a política atual negaria, mas com conta saudável (sem cheque especial recente, sem conta esvaziada, gastos até 90% das entradas e parcela até 25% da sobra) têm inadimplência de 5,3%, contra 9,7% de quem a política atual aprovaria. Afeta 318 clientes. Pedidos novos no grupo: 614. Passo da política: Nega pelo risco estimado pela IA.
+- Clientes que a política atual negaria, mas com conta saudável (sem cheque especial recente, sem conta esvaziada, gastos até 90% das entradas e parcela até 25% da sobra) têm inadimplência de 5,3%, contra 6,1% de quem a política atual aprovaria. Afeta 318 clientes. Pedidos novos no grupo: 614. Passo da política: Nega pelo risco estimado pela IA.
   - Ressalva: Piloto sorteado com contratos de 6 a 12 meses: o calote ainda é parcial; a comparação é com clientes do piloto da mesma época.
 - Clientes com score do bureau até 600, sem restrição e renda acima de R$ 2.000 (negados hoje só pelo score) têm inadimplência de 10,9%, contra 9,7% dos que têm score acima de 600. Afeta 238 clientes. Pedidos novos no grupo: 338. Passo da política: Quem pode ser aprovado.
   - Ressalva: Piloto sorteado com contratos de 6 a 12 meses: o calote ainda é parcial; a comparação é com clientes do piloto da mesma época. O gráfico mostra os contratos maduros: todas as faixas de score ficam entre 12% e 16% de calote, o score não separa bom de mau pagador. No piloto, os negados só pelo score ficam abaixo do ponto de equilíbrio (~17%): negar por score descarta clientes que dão lucro.
