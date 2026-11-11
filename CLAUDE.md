@@ -48,6 +48,9 @@ python -m src.profile --save                 # perfil do schema em docs/perfil-b
 python -m src.train                          # modelo baseline + artifacts/
 python -m src.explain                        # explicação via API (ANTHROPIC_API_KEY); sem chave, gera o prompt para /explicar
 streamlit run app.py                         # painel (legado; o painel novo é o Next em web/)
+python -m src.risk_model                     # treina o modelo de calote -> artifacts/
+python -m src.decide                         # gera e valida output/selic_final.csv
+python -m src.evaluate                       # relatório do motor -> docs/avaliacao-motor.md
 uvicorn src.api:app --reload --port 8000     # API do motor para o front (docs em /docs)
 python -m src.api --export-openapi           # atualiza contracts/openapi.json após mudar src/schemas.py
 python -m pytest -q                          # testes (inclui o contrato da API)
@@ -70,6 +73,9 @@ Use o Python da `.venv` (`.venv\Scripts\python.exe` no Windows, `.venv/bin/pytho
   inventados, sem dados do banco).
 - `web/` — painel em Next (front), consome a API por proxy `/api/*` → `localhost:8000/v1/*`.
 - `src/bureau.py` — bureau dos pedidos novos com novas tentativas e cache em `data/`.
+- Motor: `src/features.py` (variáveis do dia do pedido, lista fechada) → `src/risk_model.py`
+  (LightGBM de calote) → `src/policy.py` (política atual e proposta em 5 passos) →
+  `src/simulate.py` (R$ no histórico e nos novos) → `src/decide.py` (CSV) e `src/evaluate.py`.
 - `docs/` — briefing, perfil do banco, dicionário de dados e roteiro do pitch.
 
 O dataset de exemplo (churn sintético, `scripts/load_sample.py`) serve só de ensaio.

@@ -74,7 +74,7 @@ def calibration_table(actual, predicted, edges=(0, 0.05, 0.10, 0.15, 0.20, 0.30,
     for band, group in frame.groupby("band", observed=True):
         rows.append(
             {
-                "band": f"{band.left:.0%}–{band.right:.0%}",
+                "band": f"{max(band.left, 0):.0%}–{band.right:.0%}",
                 "orders": int(len(group)),
                 "predicted": float(group.predicted.mean()),
                 "observed": float(group.actual.mean()),
