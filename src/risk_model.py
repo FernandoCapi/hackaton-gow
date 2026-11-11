@@ -137,21 +137,22 @@ def out_of_fold(train: pd.DataFrame, n_estimators: int) -> pd.Series:
     return oof
 
 
-def main():
-    parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    parser.add_argument("--maturity", type=int, default=MATURITY_MONTHS)
-    parser.add_argument("--no-save", action="store_true", help="so mostra as metricas")
-    args = parser.parse_args()
+def is_trained() -> bool:
+    return MODEL_FILE.exists() and METRICS_FILE.exists()
 
+
+def train_and_save(maturity: int = MATURITY_MONTHS, save: bool = True) -> dict:
+    """Trains, validates and (optionally) saves the model and its metrics in artifacts/.
+    Deterministic: the same data always gives the same model."""
     orders = load_orders()
-    train = training_set(orders, args.maturity)
+    train = training_set(orders, maturity)
     validation = temporal_validation(train)
     n_estimators = validation["best_iteration"]
     oof = out_of_fold(train, n_estimators)
     final = fit(model_matrix(train), train.calote, n_estimators)
 
     metrics = {
-        "maturity_months": args.maturity,
+        "maturity_months": maturity,
         "trained_orders": int(len(train)),
         "trained_until": f"{train.data_pedido.max():%Y-%m-%d}",
         "default_rate": float(train.calote.mean()),
@@ -160,13 +161,23 @@ def main():
         "auc_out_of_fold": float(roc_auc_score(train.calote, oof)),
         "features": MODEL_FEATURES + CATEGORICAL_FEATURES,
     }
-    print(json.dumps({k: v for k, v in metrics.items() if k != "features"}, indent=2, ensure_ascii=False))
-
-    if not args.no_save:
+    if save:
         config.ARTIFACTS.mkdir(exist_ok=True)
         joblib.dump(final, MODEL_FILE)
         oof.rename("p_calote_oof").to_csv(OOF_FILE, index_label="id_pedido")
         METRICS_FILE.write_text(json.dumps(metrics, indent=2, ensure_ascii=False), encoding="utf-8")
+    return metrics
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    parser.add_argument("--maturity", type=int, default=MATURITY_MONTHS)
+    parser.add_argument("--no-save", action="store_true", help="so mostra as metricas")
+    args = parser.parse_args()
+
+    metrics = train_and_save(args.maturity, save=not args.no_save)
+    print(json.dumps({k: v for k, v in metrics.items() if k != "features"}, indent=2, ensure_ascii=False))
+    if not args.no_save:
         print(f"Gravado {MODEL_FILE.name}, {OOF_FILE.name}, {METRICS_FILE.name} em artifacts/")
 
 

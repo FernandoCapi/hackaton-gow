@@ -49,7 +49,7 @@ python -m src.train                          # modelo baseline + artifacts/
 python -m src.explain                        # explicação via API (ANTHROPIC_API_KEY); sem chave, gera o prompt para /explicar
 streamlit run app.py                         # painel (legado; o painel novo é o Next em web/)
 python -m src.risk_model                     # treina o modelo de calote -> artifacts/
-python -m src.decide                         # gera e valida output/selic_final.csv
+python -m src.decide                         # do zero: bureau + modelo se faltarem, gera e valida output/selic_final.csv
 python -m src.evaluate                       # relatório do motor -> docs/avaliacao-motor.md
 uvicorn src.api:app --reload --port 8000     # API do motor para o front (docs em /docs)
 python -m src.api --export-openapi           # atualiza contracts/openapi.json após mudar src/schemas.py

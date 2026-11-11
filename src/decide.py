@@ -1,11 +1,16 @@
-"""Generates the official decisions file from scratch.
+"""Generates the official decisions file from scratch, in one command.
 
-    python -m src.decide        # -> output/<TEAM_ID>_final.csv (+ artifacts/decisions_novos.csv)
+    python -m src.decide             # -> output/<TEAM_ID>_final.csv (+ artifacts/decisions_novos.csv)
+    python -m src.decide --retrain   # retrains the risk model before deciding
 
+On a fresh machine it prepares what is missing (neither goes to Git):
+  1. bureau of the new orders (data/bureau_novos.csv), fetched from the API with retries;
+     orders still without bureau are denied ("bureau indisponível"), never decided blind;
+  2. the risk model (artifacts/risk_model.joblib), trained from the database.
 Uses the policy approved by the analyst (artifacts/approved_policy.json) or, if none, the
-default parameters. New orders without bureau data in the cache are fetched first; any
-still missing are denied ("bureau indisponível"), never decided blind.
+default parameters.
 """
+import argparse
 import csv
 import io
 import sys
@@ -30,6 +35,36 @@ def policy_params() -> tuple[PolicyParams, str]:
         policy = Policy.model_validate_json(APPROVED_POLICY.read_text(encoding="utf-8"))
         return policy.params, f"versão {policy.version} aprovada por {policy.approved_by}"
     return PolicyParams(), "parâmetros padrão (nenhuma versão aprovada ainda)"
+
+
+def check_database() -> None:
+    """Stops with an actionable message when the challenge database is not reachable."""
+    from src.db import read_sql
+
+    try:
+        counts = read_sql("SELECT tipo_base, count(*) AS n FROM hackathon.pedidos GROUP BY 1")
+    except Exception as error:  # noqa: BLE001 - any connection or schema problem
+        sys.exit(
+            "Banco do desafio indisponível. Confira:\n"
+            "  - Docker aberto e o container do banco no ar (docker compose up -d --wait)\n"
+            "  - dump restaurado no banco fortuna (python scripts/restore_db.py <dump> --db fortuna)\n"
+            "  - DATABASE_URL no .env apontando para o banco fortuna\n"
+            f"Erro: {type(error).__name__}: {str(error).splitlines()[0]}"
+        )
+    found = dict(zip(counts.tipo_base, counts.n))
+    print(f"Banco: {found.get('historico', 0)} pedidos históricos, {found.get('novo', 0)} novos")
+
+
+def ensure_model(retrain: bool = False) -> None:
+    from src import risk_model
+
+    if risk_model.is_trained() and not retrain:
+        return
+    print("Treinando o modelo de risco (alguns segundos)..." if not retrain else "Retreinando o modelo de risco...")
+    metrics = risk_model.train_and_save()
+    validation = metrics["temporal_validation"]
+    print(f"Modelo pronto: {metrics['trained_orders']} contratos, nota {validation['auc']:.2f} em pedidos "
+          f"nunca vistos (score do bureau: {validation['auc_score_bureau']:.2f})")
 
 
 def ensure_bureau() -> None:
@@ -105,8 +140,14 @@ def validate_csv(path: Path, requested: pd.Series) -> list[str]:
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    parser.add_argument("--retrain", action="store_true", help="retreina o modelo antes de decidir")
+    args = parser.parse_args()
+
+    check_database()
     ensure_bureau()
-    from src.simulate import Engine  # imported after the cache is complete
+    ensure_model(args.retrain)
+    from src.simulate import Engine  # imported after cache and model are ready
 
     params, origin = policy_params()
     engine = Engine()
