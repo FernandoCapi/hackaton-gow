@@ -202,31 +202,38 @@ PARAM_SPECS: list[dict] = [
 
 def policy_steps(p: PolicyParams) -> list[PolicyStep]:
     """Business-language steps of the proposed policy, in the order they are applied."""
-    amount_text = (
-        "Aprova o valor pedido se couber; se não couber, nega (pedir acima da capacidade já é sinal de risco)."
-        if p.amount_rule == "full_or_deny"
-        else "Se o valor pedido não couber, testa valores menores (até 30% do pedido) e escolhe o de maior resultado esperado."
+    full_or_deny = p.amount_rule == "full_or_deny"
+    capacity_text = (
+        "Se a parcela do valor pedido não couber, nega: pedir acima da capacidade já é sinal de risco."
+        if full_or_deny
+        else "Se a parcela do valor pedido não couber, testa valores menores (até 30% do pedido) e fica com o de maior "
+             "resultado esperado."
     )
-    margin = f" e exige resultado esperado de pelo menos {_pct(p.safety_margin)} do valor" if p.safety_margin else ""
+    margin = f" Também nega se o resultado esperado ficar abaixo de {_pct(p.safety_margin)} do valor." if p.safety_margin else ""
     return [
-        PolicyStep(order=1, kind="filter", title="Fora do que o piloto testou",
-                   rule_text=f"Nega score até {p.min_score}, renda até {_brl(p.min_income)} ou mais de "
-                             f"{p.max_restrictions} restrições ativas: não há dados para aprovar com segurança."),
-        PolicyStep(order=2, kind="filter", title="Sinais de aperto na conta",
-                   rule_text=f"Nega se as saídas passam de {_pct(p.max_outflow_ratio)} das entradas, se houve cheque "
-                             f"especial em mais de {p.max_recent_overdraft_months} dos 3 meses antes do pedido, se a "
-                             f"conta foi esvaziada (saída {p.max_drain:g}x a típica), se as entradas cobrem menos de "
-                             f"{_pct(p.min_inflow_ratio)} da renda declarada ou com mais de {p.max_inquiries_90d} "
-                             f"consultas ao CPF em 90 dias."),
-        PolicyStep(order=3, kind="capacity", title="Capacidade de pagamento",
-                   rule_text=f"A parcela pode consumir até {_pct(p.max_commitment)} da renda efetiva (o menor valor "
-                             f"entre a renda declarada e a média de entradas na conta). {amount_text}"),
-        PolicyStep(order=4, kind="risk", title="Risco estimado pela IA",
-                   rule_text=f"Um modelo treinado no histórico estima a chance de calote no valor aprovado. Nega acima "
+        PolicyStep(order=1, kind="filter", outcome="approve", title="Quem pode ser aprovado",
+                   rule_text=f"Segue para aprovação quem tem consulta ao bureau, score acima de {p.min_score}, renda acima "
+                             f"de {_brl(p.min_income)} e no máximo {p.max_restrictions} restrições ativas: o perfil que o "
+                             f"piloto testou. O score não é usado como corte de risco."),
+        PolicyStep(order=2, kind="filter", outcome="deny", title="Nega com sinais de aperto na conta",
+                   rule_text=f"Basta um destes para negar:\n"
+                             f"• saídas acima de {_pct(p.max_outflow_ratio)} das entradas\n"
+                             f"• cheque especial em mais de {p.max_recent_overdraft_months} dos 3 meses antes do pedido\n"
+                             f"• conta esvaziada: saída recente {p.max_drain:g}x maior que a típica\n"
+                             f"• entradas abaixo de {_pct(p.min_inflow_ratio)} da renda declarada\n"
+                             f"• mais de {p.max_inquiries_90d} consultas ao CPF em 90 dias"),
+        PolicyStep(order=3, kind="capacity", outcome="deny" if full_or_deny else "amount",
+                   title="Nega quando a parcela não cabe" if full_or_deny else "Ajusta o valor à capacidade",
+                   rule_text=f"A parcela pode consumir até {_pct(p.max_commitment)} da renda efetiva (a menor entre a "
+                             f"renda declarada e a média de entradas na conta). {capacity_text}"),
+        PolicyStep(order=4, kind="risk", outcome="deny", title="Nega pelo risco estimado pela IA",
+                   rule_text=f"Um modelo treinado no histórico estima a chance de calote no valor a aprovar. Nega acima "
                              f"de {_pct(p.risk_cutoff)} para quem a política atual aprovaria e acima de "
-                             f"{_pct(p.risk_cutoff_expansion)} para quem ela negaria{margin}. O score não é usado como corte."),
-        PolicyStep(order=5, kind="limit", title="Limites do produto",
-                   rule_text=f"O valor fica entre {_brl(p.min_amount)} e o menor entre o valor pedido e R$ 30.000."),
+                             f"{_pct(p.risk_cutoff_expansion)} para quem ela negaria.{margin}"),
+        PolicyStep(order=5, kind="limit", outcome="amount", title="Valor aprovado",
+                   rule_text=f"Quem passou por tudo recebe {'o valor pedido' if full_or_deny else 'o valor do passo 3'}, "
+                             f"até R$ 30.000. Abaixo de "
+                             f"{_brl(p.min_amount)}, nega."),
     ]
 
 
@@ -254,8 +261,10 @@ def _policy(version: int, params: PolicyParams, approved_at=None, approved_by=No
 def current_policy() -> Policy:
     """The policy in force: the last one approved by the analyst, else the AI proposal."""
     if APPROVED_POLICY.exists():
-        return Policy.model_validate_json(APPROVED_POLICY.read_text(encoding="utf-8"))
-    return _policy(1, PolicyParams(), note="Proposta inicial da IA, aguardando aprovação do analista.")
+        saved = json.loads(APPROVED_POLICY.read_text(encoding="utf-8"))
+        return _policy(saved["version"], PolicyParams.model_validate(saved["params"]), saved.get("approved_at"),
+                       saved.get("approved_by"), saved.get("note"))  # steps rebuilt: their text may have changed
+    return _policy(1, PolicyParams())
 
 
 def approve_policy(request: ApproveRequest) -> Policy:

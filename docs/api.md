@@ -1,6 +1,6 @@
 # Contrato da API — motor de decisão ↔ painel
 
-O motor (Python, FastAPI) calcula tudo; o painel (Next, em `web/`) só busca e desenha.
+O motor (Python, FastAPI) calcula tudo; o painel (Next, em `app/`) só busca e desenha.
 Fonte da verdade: `src/schemas.py`. Arquivo para gerar tipos: `contracts/openapi.json`.
 Documentação interativa com o motor no ar: <http://localhost:8000/docs>.
 
@@ -10,7 +10,7 @@ Documentação interativa com o motor no ar: <http://localhost:8000/docs>.
    ```
    uvicorn src.api:app --reload --port 8000
    ```
-2. **Proxy no Next** (`web/next.config.*`), para não depender de CORS nem de URL fixa:
+2. **Proxy no Next** (`app/next.config.ts`), para não depender de CORS nem de URL fixa:
    ```js
    async rewrites() {
      return [{ source: '/api/:path*', destination: 'http://localhost:8000/v1/:path*' }]
@@ -23,8 +23,8 @@ Documentação interativa com o motor no ar: <http://localhost:8000/docs>.
    ```
    Uso: `import type { components } from '@/lib/api-types'` e
    `type OrderDetail = components['schemas']['OrderDetail']`.
-4. **Sem Python?** As respostas de exemplo estão em `contracts/fixtures/*.json` e podem ser
-   servidas por rotas mock do próprio Next até o motor estar disponível.
+4. **Sem banco ou modelo?** O motor responde sozinho com `contracts/fixtures/` (ou force com
+   `ENGINE_MODE=fixtures`); basta `pip install -r requirements.txt`. Não há mock no Next.
 
 ## Dados de exemplo × motor real
 

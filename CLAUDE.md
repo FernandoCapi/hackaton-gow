@@ -47,9 +47,10 @@ python -m src.bureau                         # bureau dos pedidos novos -> data/
 python -m src.profile --save                 # perfil do schema em docs/perfil-banco.md
 python -m src.train                          # modelo baseline + artifacts/
 python -m src.explain                        # explicação via API (ANTHROPIC_API_KEY); sem chave, gera o prompt para /explicar
-streamlit run app.py                         # painel (legado; o painel novo é o Next em web/)
+streamlit run app.py                         # painel (legado; o painel novo é o Next em app/)
 python -m src.risk_model                     # treina o modelo de calote -> artifacts/
 python -m src.decide                         # do zero: bureau + modelo se faltarem, gera e valida output/selic_final.csv
+python -m src.patterns                       # imprime os padrões calculados dos dados (a API usa os mesmos)
 python -m src.evaluate                       # relatório do motor -> docs/avaliacao-motor.md
 uvicorn src.api:app --reload --port 8000     # API do motor para o front (docs em /docs)
 python -m src.api --export-openapi           # atualiza contracts/openapi.json após mudar src/schemas.py
@@ -71,7 +72,7 @@ Use o Python da `.venv` (`.venv\Scripts\python.exe` no Windows, `.venv/bin/pytho
   motor real assumir cada seção). Guia para o front: `docs/api.md`.
 - `contracts/` — `openapi.json` (gera os tipos TypeScript do front) e `fixtures/` (exemplos
   inventados, sem dados do banco).
-- `web/` — painel em Next (front), consome a API por proxy `/api/*` → `localhost:8000/v1/*`.
+- `app/` — painel em Next (front), consome a API por proxy `/api/*` → `API_URL/v1/*` (padrão `localhost:8000`). Guia em `app/README.md`.
 - `src/bureau.py` — bureau dos pedidos novos com novas tentativas e cache em `data/`.
 - Motor: `src/features.py` (variáveis do dia do pedido, lista fechada) → `src/risk_model.py`
   (LightGBM de calote) → `src/policy.py` (política atual e proposta em 5 passos) →

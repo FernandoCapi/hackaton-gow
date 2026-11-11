@@ -1530,6 +1530,16 @@
             ],
             "title": "Kind"
           },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "approve",
+              "deny",
+              "amount"
+            ],
+            "title": "Outcome",
+            "description": "O que o passo decide: aprova, nega ou define o valor"
+          },
           "title": {
             "type": "string",
             "title": "Title"
@@ -1544,6 +1554,7 @@
         "required": [
           "order",
           "kind",
+          "outcome",
           "title",
           "rule_text"
         ],

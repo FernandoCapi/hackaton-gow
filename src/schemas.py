@@ -171,6 +171,7 @@ class ParamSpec(Model):
 class PolicyStep(Model):
     order: int
     kind: Literal["filter", "capacity", "risk", "amount", "limit"]
+    outcome: Literal["approve", "deny", "amount"] = Field(description="O que o passo decide: aprova, nega ou define o valor")
     title: str
     rule_text: str
 

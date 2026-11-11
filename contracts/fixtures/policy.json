@@ -14,24 +14,28 @@
     {
       "order": 1,
       "kind": "filter",
+      "outcome": "deny",
       "title": "Filtro de restrições",
       "rule_text": "Nega pedidos com mais de 0 restrições ativas no bureau."
     },
     {
       "order": 2,
       "kind": "risk",
+      "outcome": "deny",
       "title": "Risco estimado pela IA",
       "rule_text": "Um modelo treinado no histórico estima a chance de o cliente não pagar. Acima de 20%, nega."
     },
     {
       "order": 3,
       "kind": "amount",
+      "outcome": "amount",
       "title": "Valor aprovado",
       "rule_text": "Testa valores de 100% a 30% do pedido e aprova o que dá o maior resultado esperado: valores menores reduzem a parcela e o risco."
     },
     {
       "order": 4,
       "kind": "limit",
+      "outcome": "amount",
       "title": "Limites do produto",
       "rule_text": "O valor fica entre R$ 500 e o menor entre o valor pedido e R$ 30.000; abaixo de R$ 500, nega."
     }
