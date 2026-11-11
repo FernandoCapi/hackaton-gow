@@ -247,6 +247,34 @@ export interface components {
         ErrorResponse: {
             error: components["schemas"]["ErrorBody"];
         };
+        /**
+         * ExplainLine
+         * @description One calculation shown to the analyst in plain words: what, how, result, and the limit it meets.
+         */
+        ExplainLine: {
+            /**
+             * Rule
+             * @description Regra nova (proposta), regra antiga ou dado do cliente
+             * @enum {string}
+             */
+            rule: "nova" | "antiga" | "dados";
+            /** Label */
+            label: string;
+            /**
+             * Formula
+             * @description A conta por extenso, com os valores do pedido
+             */
+            formula: string;
+            /** Result */
+            result: string;
+            /**
+             * Limit
+             * @description Limite da regra e se o pedido passa
+             */
+            limit?: string | null;
+            /** Passes */
+            passes?: boolean | null;
+        };
         /** Health */
         Health: {
             /**
@@ -404,6 +432,16 @@ export interface components {
             reasons: string[];
             /** Steps */
             steps: components["schemas"]["DecisionStep"][];
+            /**
+             * Effective Income
+             * @description Menor entre a renda declarada e as entradas médias na conta
+             */
+            effective_income?: number | null;
+            /**
+             * Explain
+             * @description Como chegamos aos números, conta a conta
+             */
+            explain?: components["schemas"]["ExplainLine"][];
             /** @description EXTRA: só para negados por capacidade ou risco; não entra no selic_final.csv */
             counteroffer?: components["schemas"]["Counteroffer"] | null;
         };

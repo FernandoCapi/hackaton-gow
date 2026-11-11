@@ -303,6 +303,17 @@ class Counteroffer(Model):
     share_of_request: Rate = Field(description="amount / valor pedido")
 
 
+class ExplainLine(Model):
+    """One calculation shown to the analyst in plain words: what, how, result, and the limit it meets."""
+
+    rule: Literal["nova", "antiga", "dados"] = Field(description="Regra nova (proposta), regra antiga ou dado do cliente")
+    label: str
+    formula: str = Field(description="A conta por extenso, com os valores do pedido")
+    result: str
+    limit: str | None = Field(None, description="Limite da regra e se o pedido passa")
+    passes: bool | None = None
+
+
 class OrderDetail(OrderSummary):
     employment_type: str
     income_declared: Money
@@ -312,6 +323,8 @@ class OrderDetail(OrderSummary):
     account: AccountInfo
     reasons: list[str]
     steps: list[DecisionStep]
+    effective_income: Money | None = Field(None, description="Menor entre a renda declarada e as entradas médias na conta")
+    explain: list[ExplainLine] = Field(default_factory=list, description="Como chegamos aos números, conta a conta")
     counteroffer: Counteroffer | None = Field(
         None, description="EXTRA: só para negados por capacidade ou risco; não entra no selic_final.csv"
     )

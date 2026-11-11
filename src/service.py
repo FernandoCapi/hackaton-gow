@@ -19,6 +19,7 @@ from src.schemas import (
     ApproveRequest,
     BureauInfo,
     Counteroffer,
+    ExplainLine,
     DecisionStep,
     Health,
     ModelQuality,
@@ -388,8 +389,82 @@ def _live_detail(order_id: str) -> OrderDetail:
         ),
         reasons=reasons(o),
         steps=[DecisionStep(**step) for step in decision_steps(row, o, params)],
+        effective_income=round(float(o.renda_efetiva), 2),
+        explain=_explain(row, o, params),
         counteroffer=_counteroffer_for(order_id, o),
     )
+
+
+def _brl2(value: float) -> str:
+    return f"R$ {value:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+
+def _pct1(value: float) -> str:
+    return f"{value * 100:.1f}".replace(".", ",") + "%"
+
+
+def _explain(row: pd.Series, o: pd.Series, p: PolicyParams) -> list[ExplainLine]:
+    """Every number on the order page, as a calculation a layperson can follow."""
+    from src.features import installment
+    from src.policy import expected_rate
+
+    requested = float(o.valor_solicitado)
+    term = int(o.prazo_meses)
+    parcela = float(installment(requested, term))
+    declared = float(o.renda_declarada)
+    inflow = float(o.entradas_media)
+    effective = float(o.renda_efetiva)
+    others = float(o.parcelas_outras_instituicoes or 0)
+    risk = float(row.default_risk)
+    cutoff = float(row.risk_cutoff_used)
+    old_share = parcela / declared
+    new_share = parcela / effective
+    total_share = (parcela + others) / effective
+    expansion = row.current_decision == "NEGADO"
+    lines = [
+        ExplainLine(rule="dados", label="Parcela do valor pedido",
+                    formula=f"{_brl2(requested)} × 0,03 ÷ (1 − 1,03^−{term}) — tabela Price, juros de 3% ao mês, {term} parcelas",
+                    result=_brl2(parcela)),
+        ExplainLine(rule="antiga", label="Score, renda e restrições",
+                    formula=f"score {o.score:.0f} (precisa passar de 600) · renda declarada {_brl2(declared)} "
+                            f"(precisa passar de R$ 2.000,00) · {int(o.restricoes_ativas)} restrição(ões) ativa(s) "
+                            f"(precisa ser 0)",
+                    result="passa" if bool(o.score > 600 and declared > 2000 and o.restricoes_ativas == 0) else "não passa",
+                    limit="Regra antiga exige os três",
+                    passes=bool(o.score > 600 and declared > 2000 and o.restricoes_ativas == 0)),
+        ExplainLine(rule="antiga", label="Parcela sobre a renda declarada",
+                    formula=f"{_brl2(parcela)} ÷ {_brl2(declared)} (renda que o cliente informou)",
+                    result=_pct1(old_share), limit="Regra antiga aceita até 30%", passes=bool(old_share <= 0.30)),
+        ExplainLine(rule="dados", label="Renda efetiva",
+                    formula=f"menor valor entre a renda declarada ({_brl2(declared)}) e o que de fato entra na conta "
+                            f"por mês ({_brl2(inflow)})",
+                    result=_brl2(effective)),
+        ExplainLine(rule="nova", label="Parcela sobre a renda efetiva",
+                    formula=f"{_brl2(parcela)} ÷ {_brl2(effective)}",
+                    result=_pct1(new_share), limit=f"Regra nova aceita até {_pct1(p.max_commitment)}",
+                    passes=bool(new_share <= p.max_commitment)),
+        ExplainLine(rule="dados", label="Comprometimento total da renda efetiva",
+                    formula=f"({_brl2(parcela)} da parcela + {_brl2(others)} de dívidas em outras instituições) "
+                            f"÷ {_brl2(effective)}",
+                    result=_pct1(total_share)),
+        ExplainLine(rule="nova", label="Chance de calote",
+                    formula="estimada pelo modelo de IA treinado com 2.832 contratos, olhando a parcela frente à "
+                            "sobra do mês, o comportamento da conta e os dados do bureau",
+                    result=_pct1(risk),
+                    limit=f"Regra nova aceita até {_pct1(cutoff)}"
+                          + (" (limite menor para quem a regra antiga negaria)" if expansion else ""),
+                    passes=bool(risk <= cutoff)),
+    ]
+    if row.decision == "APROVADO":
+        amount = float(row.approved_amount)
+        p_late = min(p.late_rate, 1 - risk)
+        on_time = 1 - risk - p_late
+        lines.append(ExplainLine(
+            rule="nova", label="Resultado esperado para a Fortuna",
+            formula=f"{_brl2(amount)} × (15% × {_pct1(on_time)} de pagar em dia + 5% × {_pct1(p_late)} de atrasar "
+                    f"− 60% × {_pct1(risk)} de calote)",
+            result=_brl2(amount * float(expected_rate(risk, p.late_rate)))))
+    return lines
 
 
 def _counteroffer_for(order_id: str, o: pd.Series) -> Counteroffer | None:

@@ -626,6 +626,66 @@
         ],
         "title": "ErrorResponse"
       },
+      "ExplainLine": {
+        "properties": {
+          "rule": {
+            "type": "string",
+            "enum": [
+              "nova",
+              "antiga",
+              "dados"
+            ],
+            "title": "Rule",
+            "description": "Regra nova (proposta), regra antiga ou dado do cliente"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "formula": {
+            "type": "string",
+            "title": "Formula",
+            "description": "A conta por extenso, com os valores do pedido"
+          },
+          "result": {
+            "type": "string",
+            "title": "Result"
+          },
+          "limit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Limit",
+            "description": "Limite da regra e se o pedido passa"
+          },
+          "passes": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Passes"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "rule",
+          "label",
+          "formula",
+          "result"
+        ],
+        "title": "ExplainLine",
+        "description": "One calculation shown to the analyst in plain words: what, how, result, and the limit it meets."
+      },
       "Health": {
         "properties": {
           "status": {
@@ -928,6 +988,26 @@
             },
             "type": "array",
             "title": "Steps"
+          },
+          "effective_income": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective Income",
+            "description": "Menor entre a renda declarada e as entradas médias na conta"
+          },
+          "explain": {
+            "items": {
+              "$ref": "#/components/schemas/ExplainLine"
+            },
+            "type": "array",
+            "title": "Explain",
+            "description": "Como chegamos aos números, conta a conta"
           },
           "counteroffer": {
             "anyOf": [

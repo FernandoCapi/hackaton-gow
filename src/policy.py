@@ -222,7 +222,8 @@ def decision_steps(row: pd.Series, o: pd.Series, p: PolicyParams) -> list[dict]:
             if o.renda_declarada <= p.min_income:
                 problems.append(f"renda {brl(o.renda_declarada)} (mínimo testado: acima de {brl(p.min_income)})")
             if o.restricoes_ativas > p.max_restrictions:
-                problems.append(f"{o.restricoes_ativas:.0f} restrições ativas (máximo: {p.max_restrictions})")
+                n = int(o.restricoes_ativas)
+                problems.append(f"{n} {'restrição ativa' if n == 1 else 'restrições ativas'} (máximo: {p.max_restrictions})")
             detail = "; ".join(problems)
         return [{"order": 1, "title": step_title(STEP_DOMAIN, p), "result": "negou", "detail": detail}]
     steps.append({"order": 1, "title": step_title(STEP_DOMAIN, p), "result": "passou",
