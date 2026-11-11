@@ -42,8 +42,9 @@ Três achados, na língua do analista:
    > faixas de score têm entre 12% e 16% de calote.
 
 2. **Cortar o valor não salva quem pede além da conta.**
-   > "Quem pediu uma parcela acima de 30% da renda e teve o valor cortado pela regra atual deu
-   > **56%** de calote. Afeta 177 clientes." O pedido acima da capacidade já é o sinal de risco.
+   > "No histórico, pedidos com parcela acima de 30% da renda foram aprovados com o valor cortado
+   > e deram **56%** de calote. Afeta 177 clientes." O pedido acima da capacidade já é o sinal de
+   > risco. A regra da Fortuna hoje nega esses pedidos, e a nossa política concorda.
 
 3. **A política atual nega bons pagadores.**
    > No piloto sorteado da própria Fortuna, "clientes que a política atual negaria, mas com conta
@@ -89,12 +90,20 @@ Depois, no **laboratório**: mover o corte de risco e mostrar o resultado em R$ 
 
 ## 4. Impacto (30 s)
 
-> **Histórico, com o desfecho real** (2.832 contratos maduros, cada um avaliado por um modelo que
-> não o viu): a política atual teria dado **−R$ 229.820**; a proposta, **+R$ 884.754**. Ganho de
-> **R$ 1.114.574**, evitando **221 calotes** que a política atual aprovou.
+> **Pedidos novos (estimado pelo modelo):** aprovamos **1.232** pedidos, contra **1.084** da regra
+> atual, e com menos calote: a carteira aprovada cai de **11,3%** para **7,5%** de calote esperado.
+> Resultado esperado de **R$ 630.950**, contra R$ 367.398: **+R$ 263.552**.
 >
-> **Pedidos novos (estimado pelo modelo):** aprovamos **1.232** pedidos, contra 1.145 da atual.
-> Resultado esperado de **R$ 630.950**, contra R$ 150.021: **+R$ 480.928**.
+> O ganho vem dos dois lados, quase meio a meio:
+> - aprovamos **290** pedidos que a regra atual nega, com risco médio de 7,8%: **+R$ 117 mil**;
+> - negamos **142** que ela aprova, com risco médio de 32,4%: **evitamos R$ 146 mil** de prejuízo.
+>
+> **Histórico, com o desfecho real** (2.832 contratos maduros, cada um avaliado por um modelo que
+> não o viu): a regra atual teria dado **R$ 468.096**; a proposta, **R$ 884.754**. Ganho de
+> **R$ 416.658**, evitando **122 calotes** que a regra atual aprovou.
+>
+> A régua é a regra que a Fortuna definiu: score acima de 600, renda acima de R$ 2.000, sem
+> restrições e parcela até 30% da renda, **negando** o que passa disso.
 >
 > Conta: cada pedido aprovado rende +15% se paga em dia, +5% com atraso, −60% se não paga; somamos
 > e subtraímos o resultado da política atual nos mesmos pedidos.
@@ -122,8 +131,9 @@ Depois, no **laboratório**: mover o corte de risco e mostrar o resultado em R$ 
 
 **Escolhas e o que descartamos**
 
-- **Negar em vez de cortar o valor:** no histórico rende R$ 1,11 mi, contra R$ 0,80 mi cortando.
-  Cortes fundos não existem nos dados (5 casos); seria o modelo inventando.
+- **Negar em vez de cortar o valor:** a Fortuna nos deixou decidir. No histórico, negar rende
+  R$ 417 mil, contra R$ 99 mil cortando. Cortes fundos não existem nos dados (5 casos); o ganho
+  de cortar viria do modelo inventando. A redução aparece só como contraproposta (EXTRA).
 - **Score fora como filtro:** não prevê nada nos dados.
 - **Testamos incluir o piloto no treino** (alvo de 9 meses): não melhorou onde importa (0,891
   contra 0,903 nos clientes que a atual negaria). Mantivemos o modelo mais simples.
@@ -138,9 +148,15 @@ Depois, no **laboratório**: mover o corte de risco e mostrar o resultado em R$ 
 
 ## 6. O que mudou depois do checkpoint + próximos passos (30 s)
 
-**Depois do checkpoint (14h15):** _(preencher com o relatório da organização, a conversa com o
-mentor e as respostas da Gabi. Pergunta mais importante: se aprovar um valor menor reduz o
-calote, "reduzir até caber" vira opção — hoje estimada em +R$ 69 mil a mais nos novos)._
+**Depois do checkpoint (14h15):** _(preencher com o relatório da organização e a conversa com o
+mentor)._
+
+**Com as respostas da Fortuna** (já aplicado):
+
+- A régua de comparação passou a ser a regra que **nega** acima de 30% da renda, como a Fortuna
+  definiu. O ganho anunciado caiu de R$ 481 mil para **R$ 264 mil**: preferimos o número que a
+  banca não derruba. Nossas decisões não mudaram.
+- "Reduzir ou negar" ficou com a gente: escolhemos negar, pelos dados.
 
 **Com mais tempo:**
 
@@ -167,10 +183,15 @@ calote, "reduzir até caber" vira opção — hoje estimada em +R$ 69 mil a mais
    piloto, esse grupo teve 3,9% de calote, abaixo dos 4,5% de quem as duas políticas aprovam.
 
 4. **"Por que negar em vez de dar um valor menor?"**
-   Quem a política atual cortou deu 56% de calote, porque o pedido acima da capacidade já é o
-   sinal. E não há dados de cortes maiores: seria o modelo extrapolando. Se a Fortuna confirmar
-   que um valor menor reduz o risco, a regra muda com um clique.
+   No histórico, quem teve o valor cortado deu 56% de calote, porque o pedido acima da capacidade
+   já é o sinal. E não há dados de cortes maiores: seria o modelo extrapolando. A redução fica
+   como contraproposta no painel (EXTRA), e a regra muda com um clique se a Fortuna quiser.
 
 5. **"E se o modelo errar depois de implantado?"**
    O alerta das primeiras parcelas mostra em 3 a 6 meses, e não em 18, se a safra está pior que o
    esperado. A política tem versão, e voltar à anterior é um clique do analista.
+
+6. **"O ganho de vocês não era maior?"**
+   Era, comparando com a regra que corta o valor, como aparece no histórico. A Fortuna definiu que
+   a regra nega acima de 30%, então comparamos com ela: +R$ 264 mil nos novos e +R$ 417 mil no
+   histórico. Usamos o número mais conservador.
