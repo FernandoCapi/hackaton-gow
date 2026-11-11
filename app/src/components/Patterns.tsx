@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Bar, BarChart, CartesianGrid, Cell, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, Cell, LabelList, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { api, type Pattern } from "@/lib/api";
 import { int, pct } from "@/lib/format";
 import { Card, Section, Status } from "./ui";
@@ -29,10 +29,10 @@ const TITLES: Record<string, string> = {
   large_amount: "Valor acima de R$ 20 mil",
 };
 
-const KINDS: { kind: Kind; label: string; hint: string; color: string }[] = [
-  { kind: "risk", label: "Aprovados hoje com calote alto", hint: "A regra atual aprova; o grupo tem calote acima da base", color: "var(--critical)" },
-  { kind: "opportunity", label: "Negados hoje com calote baixo", hint: "A regra atual nega; no piloto, o grupo pagou", color: "var(--good)" },
-  { kind: "trap", label: "Risco que depende de outro fator", hint: "Calote alto só quando combinado com outra variável", color: "var(--series-1)" },
+const KINDS: { kind: Kind; label: string; tab: string; hint: string; color: string }[] = [
+  { kind: "risk", label: "Aprovados hoje com calote alto", tab: "Calote alto", hint: "A regra atual aprova; o grupo tem calote acima da base", color: "var(--critical)" },
+  { kind: "opportunity", label: "Negados hoje com calote baixo", tab: "Calote baixo", hint: "A regra atual nega; no piloto, o grupo pagou", color: "var(--good)" },
+  { kind: "trap", label: "Risco que depende de outro fator", tab: "Risco combinado", hint: "Calote alto só quando combinado com outra variável", color: "var(--series-1)" },
 ];
 
 const EVIDENCE: Record<NonNullable<Pattern["evidence"]>, string> = {
@@ -61,8 +61,9 @@ function highlightIndex(pattern: Pattern): number {
 function PatternChart({ pattern, color }: { pattern: Pattern; color: string }) {
   const highlight = highlightIndex(pattern);
   return (
+    <>
     <ResponsiveContainer width="100%" height={48 + pattern.groups.length * 32}>
-      <BarChart data={pattern.groups} layout="vertical" margin={{ left: 8, right: 32, top: 20 }}>
+      <BarChart data={pattern.groups} layout="vertical" margin={{ left: 8, right: 48, top: 20 }}>
         <CartesianGrid horizontal={false} stroke="var(--border)" />
         <XAxis type="number" tickFormatter={pct} tick={{ fill: "var(--foreground)", fontSize: 11 }} stroke="var(--border)" />
         <YAxis type="category" dataKey="label" width={150} tick={{ fill: "var(--foreground)", fontSize: 11 }} stroke="var(--border)" />
@@ -84,9 +85,30 @@ function PatternChart({ pattern, color }: { pattern: Pattern; color: string }) {
           {pattern.groups.map((g, i) => (
             <Cell key={g.label} fill={highlight === -1 || i === highlight ? color : "var(--muted)"} fillOpacity={i === highlight || highlight === -1 ? 1 : 0.55} />
           ))}
+          <LabelList dataKey="customers" position="right" formatter={(n) => int(Number(n))} fill="var(--muted)" fontSize={11} />
         </Bar>
       </BarChart>
     </ResponsiveContainer>
+    <p className="text-xs text-muted">Número ao lado da barra: clientes no grupo.</p>
+    </>
+  );
+}
+
+/** Two groups: the chart only repeats the headline number, so list them with their size instead. */
+function PatternPair({ pattern, color }: { pattern: Pattern; color: string }) {
+  const highlight = highlightIndex(pattern);
+  return (
+    <ul className="divide-y divide-border rounded-md border border-border text-sm">
+      {pattern.groups.map((g, i) => (
+        <li key={g.label} className="flex items-baseline justify-between gap-3 px-3 py-2">
+          <span>{g.label}</span>
+          <span className="whitespace-nowrap">
+            <span className="font-semibold tabular-nums" style={{ color: i === highlight ? color : undefined }}>{pct(g.default_rate)}</span>
+            <span className="ml-2 text-xs text-muted tabular-nums">{int(g.customers)} clientes</span>
+          </span>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -118,7 +140,9 @@ function PatternCard({ pattern, color }: { pattern: Pattern; color: string }) {
         <Tag>{POLICY_VIEW[pattern.current_policy_view]}</Tag>
         {pattern.evidence && <Tag>{EVIDENCE[pattern.evidence]}</Tag>}
       </div>
-      <div className="mt-2"><PatternChart pattern={pattern} color={color} /></div>
+      <div className="mt-3">
+        {pattern.groups.length === 2 ? <PatternPair pattern={pattern} color={color} /> : <PatternChart pattern={pattern} color={color} />}
+      </div>
       <details className="mt-1 text-sm">
         <summary className="cursor-pointer text-foreground/80">Detalhes</summary>
         <p className="mt-2">{pattern.sentence}</p>
@@ -134,7 +158,7 @@ function PatternCard({ pattern, color }: { pattern: Pattern; color: string }) {
 
 export default function Patterns() {
   const { data, isLoading, error } = useQuery({ queryKey: ["patterns"], queryFn: api.patterns });
-  const [filter, setFilter] = useState<Kind | null>(null);
+  const [tab, setTab] = useState<Kind>("risk");
   const byKind = (kind: Kind) =>
     (data ?? [])
       .filter((p) => (p.kind ?? "risk") === kind)
@@ -144,31 +168,36 @@ export default function Patterns() {
     <Section title="Padrões encontrados" subtitle="Grupos que pagam pior ou melhor do que a regra atual supõe, no histórico e no piloto.">
       <Status loading={isLoading} error={error} />
       {data && (
-        <div className="mb-6 grid gap-3 sm:grid-cols-3">
-          {KINDS.map(({ kind, label, hint, color }) => (
-            <button
-              key={kind}
-              type="button"
-              aria-pressed={filter === kind}
-              onClick={() => setFilter(filter === kind ? null : kind)}
-              className={`rounded-lg border bg-surface p-4 text-left transition ${filter === kind ? "border-accent" : "border-border hover:border-muted"}`}
-            >
-              <p className="text-3xl font-semibold tabular-nums" style={{ color }}>{byKind(kind).length}</p>
-              <p className="mt-1 text-sm font-medium">{label}</p>
-              <p className="text-xs text-muted">{hint}</p>
-            </button>
-          ))}
-        </div>
-      )}
-      {KINDS.filter(({ kind }) => !filter || filter === kind).map(({ kind, label, color }) =>
-        byKind(kind).length ? (
-          <div key={kind} className="mb-8">
-            <h2 className="mb-3 text-base font-semibold">{label}</h2>
-            <div className="grid gap-4 lg:grid-cols-2">
-              {byKind(kind).map((p) => <PatternCard key={p.id} pattern={p} color={color} />)}
-            </div>
+        <>
+          <div role="tablist" aria-label="Tipo de padrão" className="mb-4 inline-flex flex-wrap gap-1 rounded-lg bg-border/40 p-1">
+            {KINDS.map(({ kind, tab: short, color }) => (
+              <button
+                key={kind}
+                type="button"
+                role="tab"
+                aria-selected={tab === kind}
+                onClick={() => setTab(kind)}
+                className={`flex items-center gap-2 whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium transition ${tab === kind ? "bg-surface shadow-sm" : "text-foreground/70 hover:text-foreground"}`}
+              >
+                <span aria-hidden className="h-2 w-2 rounded-full" style={{ background: color }} />
+                {short}
+                <span className="tabular-nums text-muted">{byKind(kind).length}</span>
+              </button>
+            ))}
           </div>
-        ) : null,
+          {KINDS.filter(({ kind }) => kind === tab).map(({ kind, label, hint, color }) => (
+            <div key={kind} role="tabpanel">
+              <p className="mb-4 text-sm text-muted"><span className="font-medium text-foreground">{label}.</span> {hint}</p>
+              {byKind(kind).length ? (
+                <div className="grid gap-4 lg:grid-cols-2">
+                  {byKind(kind).map((p) => <PatternCard key={p.id} pattern={p} color={color} />)}
+                </div>
+              ) : (
+                <p className="text-sm text-muted">Nenhum padrão neste grupo.</p>
+              )}
+            </div>
+          ))}
+        </>
       )}
     </Section>
   );
