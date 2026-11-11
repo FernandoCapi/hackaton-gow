@@ -68,7 +68,7 @@ export function Status({ loading, error }: { loading: boolean; error: Error | nu
 /** Marks what goes beyond the challenge: visible, but never mistaken for the official decision. */
 export function ExtraBadge({ className = "" }: { className?: string }) {
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full bg-extra px-2 py-0.5 text-[11px] font-semibold tracking-wide text-white ${className}`}>
+    <span className={`inline-flex items-center gap-1 rounded-full bg-extra px-2 py-0.5 text-[11px] font-semibold tracking-wide text-on-solid ${className}`}>
       <Sparkles className="size-3" aria-hidden /> EXTRA
     </span>
   );

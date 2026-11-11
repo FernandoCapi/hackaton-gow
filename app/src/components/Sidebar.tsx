@@ -46,7 +46,7 @@ export default function Sidebar() {
     <aside className="bg-sidebar text-sidebar-fg md:sticky md:top-0 md:flex md:h-screen md:w-68 md:shrink-0 md:flex-col">
       <div className="flex items-start justify-between gap-2 px-4 pt-4 pb-4 md:px-5 md:pt-6">
         <Link href="/" className="flex items-center gap-2.5">
-          <span className="grid size-9 place-items-center rounded-xl bg-gradient-to-br from-gold to-[#8a6510] text-white shadow-md">
+          <span className="grid size-9 place-items-center rounded-xl bg-gradient-to-br from-[#b88a16] to-[#8a6510] text-white shadow-md">
             <Sprout className="size-5" aria-hidden />
           </span>
           <span>
@@ -70,14 +70,14 @@ export default function Sidebar() {
                   href={section.href}
                   aria-current={active ? "page" : undefined}
                   className={`flex items-start gap-3 whitespace-nowrap rounded-lg px-3 py-2.5 transition-colors md:whitespace-normal ${
-                    active ? "bg-sidebar-active shadow-[inset_3px_0_0_var(--gold)]" : "hover:bg-sidebar-active/60"
+                    active ? "bg-sidebar-active shadow-[inset_3px_0_0_var(--sidebar-gold)]" : "hover:bg-sidebar-active/60"
                   }`}
                 >
-                  <Icon className={`mt-0.5 size-4 shrink-0 ${active ? "text-gold" : "text-sidebar-muted"}`} aria-hidden />
+                  <Icon className={`mt-0.5 size-4 shrink-0 ${active ? "text-sidebar-gold" : "text-sidebar-muted"}`} aria-hidden />
                   <span>
                     <span className={`block text-sm ${active ? "font-medium" : "text-sidebar-fg/85"}`}>{section.label}</span>
                     {hints[section.href] && (
-                      <span className={`hidden text-xs md:block ${warn ? "text-gold" : "text-sidebar-muted"}`}>
+                      <span className={`hidden text-xs md:block ${warn ? "text-sidebar-gold" : "text-sidebar-muted"}`}>
                         {warn && <span aria-hidden>● </span>}{hints[section.href]}
                       </span>
                     )}
@@ -94,7 +94,7 @@ export default function Sidebar() {
           <p role="alert" className="rounded-md bg-critical/20 p-2 text-white">{health.error.message}</p>
         ) : (
           <p className="flex items-center gap-2 text-sidebar-muted">
-            <span className={`size-2 rounded-full ${live ? "bg-emerald-400" : "bg-gold"}`} aria-hidden />
+            <span className={`size-2 rounded-full ${live ? "bg-emerald-400" : "bg-sidebar-gold"}`} aria-hidden />
             {live ? "Motor ao vivo · dados de 30/09/2026" : "Dados de exemplo"}
           </p>
         )}

@@ -63,7 +63,7 @@ function ApproveForm({ params }: { params: PolicyParams }) {
       <p className="text-sm font-medium">Aprovar estes parâmetros como política em vigor</p>
       <label htmlFor="approved-by" className="sr-only">Nome do analista</label>
       <input id="approved-by" required value={name} onChange={(e) => setName(e.target.value)} placeholder="Nome do analista" className="rounded-md border border-border bg-background px-2 py-1.5 text-sm" />
-      <button disabled={approve.isPending || !name.trim()} className="rounded-lg bg-accent px-3 py-2 text-sm font-medium text-white hover:bg-accent-strong disabled:opacity-50">
+      <button disabled={approve.isPending || !name.trim()} className="rounded-lg bg-accent px-3 py-2 text-sm font-medium text-on-solid hover:bg-accent-strong disabled:opacity-50">
         {approve.isPending ? "Aprovando…" : "Aprovar política"}
       </button>
       {approve.isError && <p role="alert" className="text-sm text-critical">{approve.error.message}</p>}
