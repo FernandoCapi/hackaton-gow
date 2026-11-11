@@ -294,7 +294,7 @@ export interface components {
             defaults_avoided: number;
             /**
              * Good Customers Gained
-             * @description Bons pagadores que a atual negaria e a proposta aprova
+             * @description No piloto (única evidência sobre quem a atual nega): clientes que a atual negaria, a proposta aprova e que não deram calote até agora (contratos de 6 a 12 meses, calote ainda parcial)
              */
             good_customers_gained: number;
         };
@@ -959,7 +959,7 @@ export interface operations {
                 changed?: boolean | null;
                 /** @description Busca por id do pedido ou do cliente */
                 q?: string | null;
-                sort?: "risk" | "amount" | "order_id";
+                sort?: "risk" | "risk_asc" | "amount" | "amount_asc" | "approved" | "profit" | "recent" | "order_id";
                 page?: number;
                 page_size?: number;
             };

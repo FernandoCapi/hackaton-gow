@@ -321,4 +321,4 @@ class OrderPage(Page[OrderSummary]):
     pass
 
 
-OrderSort = Literal["risk", "amount", "order_id"]
+OrderSort = Literal["risk", "risk_asc", "amount", "amount_asc", "approved", "profit", "recent", "order_id"]
