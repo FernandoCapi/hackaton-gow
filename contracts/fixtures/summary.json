@@ -1,0 +1,24 @@
+{
+  "new_orders_total": 2000,
+  "historical_mature_total": 4296,
+  "base_default_rate": 0.141,
+  "current_policy": {
+    "approved": 1180,
+    "denied": 820,
+    "approved_amount": 9540000.0,
+    "expected_result": 167000.0
+  },
+  "proposed_policy": {
+    "approved": 1265,
+    "denied": 735,
+    "approved_amount": 8710000.0,
+    "expected_result": 489000.0
+  },
+  "gain": 322000.0,
+  "model": {
+    "auc": 0.78,
+    "auc_current_rule": 0.61,
+    "trained_until": "2025-06-30",
+    "validated_on": "contratos de jul/2025 a dez/2025"
+  }
+}

@@ -9,3 +9,7 @@ anthropic
 python-dotenv
 joblib
 requests
+fastapi
+uvicorn
+pytest
+httpx

@@ -1,0 +1,46 @@
+[
+  {
+    "id": "salary_below_declared",
+    "sentence": "Clientes cujo salário que entra na conta é menos da metade da renda declarada têm inadimplência de 31%, contra 14% da média. Afeta 640 clientes.",
+    "group_description": "Salário na conta < 50% da renda declarada",
+    "group_default_rate": 0.31,
+    "overall_default_rate": 0.141,
+    "customers_affected": 640,
+    "direction": "worse",
+    "current_policy_view": "approves",
+    "groups": [
+      { "label": "< 50%", "default_rate": 0.31, "customers": 640 },
+      { "label": "50–90%", "default_rate": 0.16, "customers": 1210 },
+      { "label": "≥ 90%", "default_rate": 0.08, "customers": 2446 }
+    ]
+  },
+  {
+    "id": "overdraft_heavy",
+    "sentence": "Clientes que passaram mais de 30 dias no cheque especial nos últimos 12 meses têm inadimplência de 27%, contra 14% da média. Afeta 910 clientes.",
+    "group_description": "Mais de 30 dias de cheque especial em 12 meses",
+    "group_default_rate": 0.27,
+    "overall_default_rate": 0.141,
+    "customers_affected": 910,
+    "direction": "worse",
+    "current_policy_view": "mixed",
+    "groups": [
+      { "label": "0 dias", "default_rate": 0.07, "customers": 1980 },
+      { "label": "1–30 dias", "default_rate": 0.13, "customers": 1406 },
+      { "label": "> 30 dias", "default_rate": 0.27, "customers": 910 }
+    ]
+  },
+  {
+    "id": "low_score_stable_salary",
+    "sentence": "Clientes com score entre 500 e 600, mas salário estável na conta há 12 meses, têm inadimplência de 9%, contra 14% da média. Afeta 210 clientes.",
+    "group_description": "Score 500–600 com 12 meses de salário regular",
+    "group_default_rate": 0.09,
+    "overall_default_rate": 0.141,
+    "customers_affected": 210,
+    "direction": "better",
+    "current_policy_view": "denies",
+    "groups": [
+      { "label": "Score 500–600, salário regular", "default_rate": 0.09, "customers": 210 },
+      { "label": "Score 500–600, salário irregular", "default_rate": 0.29, "customers": 185 }
+    ]
+  }
+]
