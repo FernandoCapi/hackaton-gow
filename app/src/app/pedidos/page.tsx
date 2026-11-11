@@ -7,16 +7,16 @@ import { api, type OrderQuery } from "@/lib/api";
 import { brl, date, int, pct } from "@/lib/format";
 import { Card, DecisionBadge, Section, Status } from "@/components/ui";
 
-const PAGE_SIZE = 50;
+const PAGE_SIZES = [20, 50, 100, 200]; // 200 is the API maximum for page_size
 const select = "rounded-md border border-border bg-background px-2 py-1.5 text-sm";
 
 export default function OrdersPage() {
-  const [query, setQuery] = useState<OrderQuery>({ sort: "risk", page: 1, page_size: PAGE_SIZE });
+  const [query, setQuery] = useState<OrderQuery>({ sort: "risk", page: 1, page_size: 20 });
   const set = (patch: Partial<OrderQuery>) => setQuery({ ...query, page: 1, ...patch });
   const orders = useQuery({ queryKey: ["orders", query], queryFn: () => api.orders(query), placeholderData: keepPreviousData });
   const health = useQuery({ queryKey: ["health"], queryFn: api.health });
   const csvIsExample = health.data?.sections.decisions_csv !== "live";
-  const pages = orders.data ? Math.max(1, Math.ceil(orders.data.total / PAGE_SIZE)) : 1;
+  const pages =orders.data ? Math.max(1, Math.ceil(orders.data.total / query.page_size!)) : 1;
 
   return (
     <Section title="Pedidos novos" subtitle="Decisão sugerida pela política em vigor, comparada com a regra antiga.">
@@ -35,24 +35,18 @@ export default function OrdersPage() {
             <option value="false">Decisão igual</option>
           </select>
         </label>
-        <label className="flex flex-col text-sm">Ordenar por
-          <select className={select} value={query.sort} onChange={(e) => set({ sort: e.target.value as OrderQuery["sort"] })}>
-            <option value="risk">Maior risco</option>
-            <option value="amount">Maior valor pedido</option>
-            <option value="order_id">Número do pedido</option>
-          </select>
-        </label>
         <label className="flex flex-col text-sm">Pedido ou cliente
           <input className={select} value={query.q ?? ""} onChange={(e) => set({ q: e.target.value || undefined })} placeholder="P-99001 ou C-99001" />
         </label>
+        {/* Full official file (all 2,000 orders), ignores the filters above. The example CSV has only a
+            handful of orders: never let it be sent as the official file. */}
         <div className="ml-auto text-right">
-          {/* The example CSV has only a handful of orders: never let it be sent as the official file. */}
           {csvIsExample ? (
             <button disabled title="Disponível quando o motor gerar as decisões reais" className="rounded-md border border-border px-3 py-1.5 text-sm text-muted">
               Baixar selic_final.csv
             </button>
           ) : (
-            <a href={api.decisionsCsvUrl} download className="rounded-md bg-foreground px-3 py-1.5 text-sm text-background">Baixar selic_final.csv</a>
+            <a href="/api/decisions.csv" download className="rounded-md border border-border px-3 py-1.5 text-sm font-medium hover:bg-background">Baixar selic_final.csv</a>
           )}
           {csvIsExample && <p className="mt-1 text-xs text-muted">Arquivo de exemplo: não enviar.</p>}
         </div>
@@ -84,8 +78,7 @@ export default function OrdersPage() {
                   <td className="px-3 py-2 text-right tabular-nums">{brl(o.approved_amount)}</td>
                   <td className="px-3 py-2 text-right tabular-nums">{pct(o.default_risk)}</td>
                   <td className="px-3 py-2">
-                    <DecisionBadge decision={o.current_decision} />
-                    {o.changed_vs_current && <span className="ml-2 text-xs text-muted">(mudou)</span>}
+                    <DecisionBadge decision={o.current_decision} subtle />
                   </td>
                 </tr>
               ))}
@@ -97,8 +90,20 @@ export default function OrdersPage() {
         </Card>
       )}
       {orders.data && (
-        <div className="mt-3 flex items-center justify-between text-sm text-muted">
-          <span>{int(orders.data.total)} pedidos</span>
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-sm text-muted">
+          <div className="flex items-center gap-3">
+            <span>
+              {orders.data.total
+                ? `${int((orders.data.page - 1) * orders.data.page_size + 1)}–${int((orders.data.page - 1) * orders.data.page_size + orders.data.items.length)} de ${int(orders.data.total)} pedidos`
+                : "0 pedidos"}
+            </span>
+            <label className="flex items-center gap-2">
+              Itens por página
+              <select className={select} value={query.page_size} onChange={(e) => set({ page_size: Number(e.target.value) })}>
+                {PAGE_SIZES.map((size) => <option key={size} value={size}>{size}</option>)}
+              </select>
+            </label>
+          </div>
           <div className="flex items-center gap-2">
             <button disabled={query.page === 1} onClick={() => setQuery({ ...query, page: query.page! - 1 })} className="rounded-md border border-border px-2 py-1 disabled:opacity-40">Anterior</button>
             <span>Página {query.page} de {pages}</span>
