@@ -9,7 +9,7 @@ const plex = IBM_Plex_Sans({ variable: "--font-plex", subsets: ["latin"], weight
 
 export const metadata: Metadata = {
   title: "Fortuna Crédito — Painel de risco",
-  description: "Padrões encontrados pela IA e política de crédito proposta para o analista de risco.",
+  description: "Padrões encontrados nos dados e política de crédito proposta para o analista de risco.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
