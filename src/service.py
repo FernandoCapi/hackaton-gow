@@ -420,7 +420,10 @@ def _explain(row: pd.Series, o: pd.Series, p: PolicyParams) -> list[ExplainLine]
     old_share = parcela / declared
     new_share = parcela / effective
     total_share = (parcela + others) / effective
-    expansion = row.current_decision == "NEGADO"
+    # Same criterion the engine uses to pick the cutoff (src/policy.py::proposed_policy): the stricter
+    # limit applies to whoever fails score, income or restrictions of the old rule. An order the old
+    # rule denies only because the installment passes 30% of income keeps the regular limit.
+    expansion = not bool(row.current_eligible)
     lines = [
         ExplainLine(rule="dados", label="Parcela do valor pedido",
                     formula=f"{_brl2(requested)} × 0,03 ÷ (1 − 1,03^−{term}) — tabela Price, juros de 3% ao mês, {term} parcelas",
@@ -452,7 +455,8 @@ def _explain(row: pd.Series, o: pd.Series, p: PolicyParams) -> list[ExplainLine]
                             "sobra do mês, o comportamento da conta e os dados do bureau",
                     result=_pct1(risk),
                     limit=f"Regra nova aceita até {_pct1(cutoff)}"
-                          + (" (limite menor para quem a regra antiga negaria)" if expansion else ""),
+                          + (" (limite menor para quem não passa em score, renda ou restrições da regra antiga)"
+                             if expansion else ""),
                     passes=bool(risk <= cutoff)),
     ]
     if row.decision == "APROVADO":

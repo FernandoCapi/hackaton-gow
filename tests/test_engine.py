@@ -167,3 +167,21 @@ def test_counteroffers_only_for_capacity_or_risk_and_never_in_official_file(engi
     requested = engine.new_grid.orders.loc[offers.index, "valor_solicitado"]
     assert (offers.approved_amount <= requested + 0.005).all() and (offers.approved_amount >= 500).all()
     service._decisions.cache_clear()
+
+
+def test_explain_risk_limit_matches_the_cutoff_the_engine_used(engine):
+    # The stricter limit is for clients who fail score, income or restrictions of the old rule.
+    # Orders the old rule denies only because the installment passes 30% keep the regular limit.
+    from src import service
+
+    params = PolicyParams()
+    decisions = engine.decide_new(params)
+    orders = engine.new_grid.orders
+    only_installment = decisions[decisions.current_eligible & decisions.current_decision.eq("NEGADO")]
+    expansion = decisions[~decisions.current_eligible & decisions.decision.eq("APROVADO")]
+    assert len(only_installment) and len(expansion)
+    for frame, stricter in [(only_installment.head(10), False), (expansion.head(10), True)]:
+        for order_id, row in frame.iterrows():
+            line = next(l for l in service._explain(row, orders.loc[order_id], params) if l.label == "Chance de calote")
+            assert ("limite menor" in line.limit) == stricter
+            assert row.risk_cutoff_used == (params.risk_cutoff_expansion if stricter else params.risk_cutoff)
