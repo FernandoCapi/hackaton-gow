@@ -742,6 +742,42 @@
           "changed_vs_current": {
             "type": "integer",
             "title": "Changed Vs Current"
+          },
+          "expected_result": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Result",
+            "description": "Resultado esperado pelo modelo, política proposta"
+          },
+          "current_expected_result": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Expected Result",
+            "description": "Resultado esperado pelo modelo, política atual"
+          },
+          "expected_gain": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Gain",
+            "description": "Estimativa do ganho que a nota de 40% mede"
           }
         },
         "additionalProperties": false,
@@ -1282,38 +1318,118 @@
       },
       "PolicyParams": {
         "properties": {
+          "min_score": {
+            "type": "integer",
+            "maximum": 1000.0,
+            "minimum": 0.0,
+            "title": "Min Score",
+            "description": "Nega com score do bureau até este valor",
+            "default": 450
+          },
+          "min_income": {
+            "type": "number",
+            "maximum": 20000.0,
+            "minimum": 0.0,
+            "title": "Min Income",
+            "description": "Nega com renda declarada até este valor",
+            "default": 1500.0
+          },
           "max_restrictions": {
             "type": "integer",
             "maximum": 10.0,
             "minimum": 0.0,
             "title": "Max Restrictions",
-            "description": "Nega acima deste número de restrições",
+            "description": "Nega acima deste número de restrições (1 restrição: 19–23% de calote no piloto; o modelo não as viu)",
             "default": 0
+          },
+          "max_outflow_ratio": {
+            "type": "number",
+            "maximum": 2.0,
+            "minimum": 0.0,
+            "title": "Max Outflow Ratio",
+            "description": "Nega se as saídas passam desta fração das entradas",
+            "default": 0.9
+          },
+          "max_recent_overdraft_months": {
+            "type": "integer",
+            "maximum": 3.0,
+            "minimum": 0.0,
+            "title": "Max Recent Overdraft Months",
+            "description": "Nega acima deste número de meses com cheque especial nos 3 antes do pedido",
+            "default": 1
+          },
+          "max_drain": {
+            "type": "number",
+            "maximum": 20.0,
+            "minimum": 1.0,
+            "title": "Max Drain",
+            "description": "Nega se a maior saída recente passa X vezes a saída típica",
+            "default": 3.0
+          },
+          "min_inflow_ratio": {
+            "type": "number",
+            "maximum": 2.0,
+            "minimum": 0.0,
+            "title": "Min Inflow Ratio",
+            "description": "Nega se as entradas cobrem menos que isto da renda declarada",
+            "default": 0.6
+          },
+          "max_inquiries_90d": {
+            "type": "integer",
+            "maximum": 50.0,
+            "minimum": 0.0,
+            "title": "Max Inquiries 90D",
+            "description": "Nega acima deste número de consultas ao CPF em 90 dias",
+            "default": 7
+          },
+          "max_commitment": {
+            "type": "number",
+            "maximum": 0.5,
+            "minimum": 0.05,
+            "title": "Max Commitment",
+            "description": "Parcela máxima sobre a renda efetiva",
+            "default": 0.25
+          },
+          "amount_rule": {
+            "type": "string",
+            "enum": [
+              "full_or_deny",
+              "maximize_expected_profit"
+            ],
+            "title": "Amount Rule",
+            "default": "full_or_deny"
           },
           "risk_cutoff": {
             "type": "number",
             "maximum": 1.0,
             "minimum": 0.0,
             "title": "Risk Cutoff",
-            "description": "Nega com chance de calote acima disto",
-            "default": 0.2
+            "description": "Nega com chance de calote acima disto (quem a política atual aprovaria)",
+            "default": 0.15
+          },
+          "risk_cutoff_expansion": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Risk Cutoff Expansion",
+            "description": "Mesmo corte para quem a política atual negaria (evidência só do piloto)",
+            "default": 0.12
           },
           "safety_margin": {
             "type": "number",
             "maximum": 0.5,
             "minimum": 0.0,
             "title": "Safety Margin",
-            "description": "Margem sobre o ponto de equilíbrio",
+            "description": "Resultado esperado mínimo por real emprestado",
             "default": 0.0
           },
-          "amount_rule": {
-            "type": "string",
-            "enum": [
-              "maximize_expected_profit",
-              "fixed_bands"
-            ],
-            "title": "Amount Rule",
-            "default": "maximize_expected_profit"
+          "late_rate": {
+            "type": "number",
+            "maximum": 0.6,
+            "minimum": 0.0,
+            "title": "Late Rate",
+            "description": "Chance de atraso usada na conta (não é previsível nos dados)",
+            "default": 0.2
           },
           "min_amount": {
             "type": "number",
@@ -1325,7 +1441,8 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "title": "PolicyParams"
+        "title": "PolicyParams",
+        "description": "Every number of the proposed policy. Omitted fields take the default."
       },
       "PolicyStep": {
         "properties": {
@@ -1337,6 +1454,7 @@
             "type": "string",
             "enum": [
               "filter",
+              "capacity",
               "risk",
               "amount",
               "limit"
@@ -1459,6 +1577,13 @@
             },
             "type": "array",
             "title": "By Risk Band"
+          },
+          "steps_impact": {
+            "items": {
+              "$ref": "#/components/schemas/StepImpact"
+            },
+            "type": "array",
+            "title": "Steps Impact"
           }
         },
         "additionalProperties": false,
@@ -1470,6 +1595,41 @@
           "by_risk_band"
         ],
         "title": "SimulationResult"
+      },
+      "StepImpact": {
+        "properties": {
+          "step": {
+            "type": "string",
+            "title": "Step",
+            "examples": [
+              "Sinais de aperto na conta"
+            ]
+          },
+          "denied_new_orders": {
+            "type": "integer",
+            "title": "Denied New Orders",
+            "description": "Pedidos novos negados neste passo"
+          },
+          "historical_gain_if_removed": {
+            "type": "number",
+            "title": "Historical Gain If Removed",
+            "description": "Quanto o resultado no histórico muda se o passo for desligado (negativo = o passo ajuda)"
+          },
+          "new_orders_gain_if_removed": {
+            "type": "number",
+            "title": "New Orders Gain If Removed",
+            "description": "Mesma medida, estimada nos pedidos novos"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "step",
+          "denied_new_orders",
+          "historical_gain_if_removed",
+          "new_orders_gain_if_removed"
+        ],
+        "title": "StepImpact"
       },
       "Summary": {
         "properties": {
