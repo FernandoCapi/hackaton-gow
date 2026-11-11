@@ -80,7 +80,7 @@ porque ainda não tiveram tempo de atrasar, e colunas que vazam o resultado.
 | **P-75328** | Score **510**, R$ 2.800 em 36x, renda R$ 3.150, conta saudável. Risco **3,4%** | Nega (score) | **Aprova** |
 | **P-93615** | Score 674, R$ 13.100 em 12x. Nenhum filtro dispara, mas as entradas cobrem só 68% da renda declarada e a parcela come 28% da sobra do mês. Combinando os sinais, a IA estima risco **32%** | Aprova | **Nega** (risco da IA) |
 | P-47965 | Caso tranquilo: R$ 3.500, risco 2,2% | Aprova | Aprova |
-| P-80781 · **EXTRA** | Pediu R$ 26.000 e não cabe na renda: negado. O painel mostra a **contraproposta**: R$ 23.400 (90%) com 6,2% de risco. Não entra no arquivo oficial | — | Nega + oferta |
+| P-80781 · **EXTRA** | Pediu R$ 26.000: a parcela passa de 25% da renda efetiva (o que de fato entra na conta), então nega. O painel mostra a **contraproposta**: R$ 23.400 (90%) com 6,2% de risco. Não entra no arquivo oficial | Aprova | Nega + oferta |
 
 Fala na demo: "o score diz que o P-05909 é ótimo; a conta diz o contrário — e o histórico mostra
 que perfis assim deram calote 9 em cada 10 vezes". Mostrar os **motivos** e os **passos** do pedido.
