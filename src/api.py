@@ -145,5 +145,5 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--export-openapi", action="store_true", help=f"grava {OPENAPI_FILE.name}")
     if parser.parse_args().export_openapi:
-        OPENAPI_FILE.write_text(openapi_text(), encoding="utf-8")
+        OPENAPI_FILE.write_text(openapi_text(), encoding="utf-8", newline="\n")
         print(f"Gravado {OPENAPI_FILE.relative_to(config.ROOT)}")
