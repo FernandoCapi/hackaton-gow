@@ -152,7 +152,7 @@ function LabBody({ policy }: { policy: Policy }) {
               <Stat label="Aprovados" value={int(data.new_orders.approved)} hint={`Regra antiga: ${int(data.new_orders.current_approved)}`} />
               <Stat label="Decisões que mudam" value={int(data.new_orders.changed_vs_current)} hint="Em relação à regra antiga" />
             </div>
-            <h3 className="mb-2 mt-5 text-sm font-medium text-muted">No histórico (contratos encerrados, desfecho real)</h3>
+            <h3 className="mb-2 mt-5 text-sm font-medium text-muted">No histórico (contratos com 12+ meses)</h3>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
               <Stat label="Ganho sobre a regra antiga" value={brl(data.historical.gain)} hint={`${brl(data.historical.proposed_result)} contra ${brl(data.historical.current_result)}`} />
               <Stat label="Calotes evitados" value={int(data.historical.defaults_avoided)} hint="Aprovados pela regra antiga que a proposta nega" />

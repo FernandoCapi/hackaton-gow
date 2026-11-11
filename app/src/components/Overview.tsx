@@ -15,7 +15,7 @@ export default function Overview() {
           <Stat label="Ganho esperado sobre a regra antiga" value={brl(data.gain)} hint={`${brl(data.proposed_policy.expected_result)} contra ${brl(data.current_policy.expected_result)}`} />
           <Stat label="Aprovados pela proposta" value={int(data.proposed_policy.approved)} hint={`Regra antiga: ${int(data.current_policy.approved)} de ${int(data.new_orders_total)}`} />
           <Stat label="Valor aprovado" value={brl(data.proposed_policy.approved_amount)} hint={`Regra antiga: ${brl(data.current_policy.approved_amount)}`} />
-          <Stat label="Inadimplência histórica" value={pct(data.base_default_rate)} hint={`${int(data.historical_mature_total)} contratos já encerrados`} />
+          <Stat label="Inadimplência histórica" value={pct(data.base_default_rate)} hint={`${int(data.historical_mature_total)} contratos com 12+ meses`} />
         </div>
       )}
     </Section>
