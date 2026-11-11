@@ -108,10 +108,34 @@ class Pattern(Model):
 
 
 class PolicyParams(Model):
-    max_restrictions: int = Field(0, ge=0, le=10, description="Nega acima deste número de restrições")
-    risk_cutoff: Rate = Field(0.20, ge=0, le=1, description="Nega com chance de calote acima disto")
-    safety_margin: Rate = Field(0.0, ge=0, le=0.5, description="Margem sobre o ponto de equilíbrio")
-    amount_rule: Literal["maximize_expected_profit", "fixed_bands"] = "maximize_expected_profit"
+    """Every number of the proposed policy. Omitted fields take the default."""
+
+    # Step 1 - outside what the pilot tested (no data to approve safely)
+    min_score: int = Field(450, ge=0, le=1000, description="Nega com score do bureau até este valor")
+    min_income: Money = Field(1500.0, ge=0, le=20000, description="Nega com renda declarada até este valor")
+    max_restrictions: int = Field(
+        0, ge=0, le=10,
+        description="Nega acima deste número de restrições (1 restrição: 19–23% de calote no piloto; o modelo não as viu)",
+    )
+    # Step 2 - signs of financial strain in the account
+    max_outflow_ratio: Rate = Field(0.90, ge=0, le=2, description="Nega se as saídas passam desta fração das entradas")
+    max_recent_overdraft_months: int = Field(
+        1, ge=0, le=3, description="Nega acima deste número de meses com cheque especial nos 3 antes do pedido"
+    )
+    max_drain: float = Field(3.0, ge=1, le=20, description="Nega se a maior saída recente passa X vezes a saída típica")
+    min_inflow_ratio: Rate = Field(0.60, ge=0, le=2, description="Nega se as entradas cobrem menos que isto da renda declarada")
+    max_inquiries_90d: int = Field(7, ge=0, le=50, description="Nega acima deste número de consultas ao CPF em 90 dias")
+    # Step 3 - capacity and amount
+    max_commitment: Rate = Field(0.25, ge=0.05, le=0.5, description="Parcela máxima sobre a renda efetiva")
+    amount_rule: Literal["full_or_deny", "maximize_expected_profit"] = "full_or_deny"
+    # Step 4 - risk estimated by the model
+    risk_cutoff: Rate = Field(0.15, ge=0, le=1, description="Nega com chance de calote acima disto (quem a política atual aprovaria)")
+    risk_cutoff_expansion: Rate = Field(
+        0.12, ge=0, le=1, description="Mesmo corte para quem a política atual negaria (evidência só do piloto)"
+    )
+    safety_margin: Rate = Field(0.0, ge=0, le=0.5, description="Resultado esperado mínimo por real emprestado")
+    late_rate: Rate = Field(0.20, ge=0, le=0.6, description="Chance de atraso usada na conta (não é previsível nos dados)")
+    # Step 5 - product limits
     min_amount: Money = Field(500.0, ge=500, le=30000)
 
 
@@ -135,7 +159,7 @@ class ParamSpec(Model):
 
 class PolicyStep(Model):
     order: int
-    kind: Literal["filter", "risk", "amount", "limit"]
+    kind: Literal["filter", "capacity", "risk", "amount", "limit"]
     title: str
     rule_text: str
 
@@ -179,6 +203,9 @@ class NewOrdersResult(Model):
     total_approved_amount: Money
     current_approved: int
     changed_vs_current: int
+    expected_result: Money | None = Field(None, description="Resultado esperado pelo modelo, política proposta")
+    current_expected_result: Money | None = Field(None, description="Resultado esperado pelo modelo, política atual")
+    expected_gain: Money | None = Field(None, description="Estimativa do ganho que a nota de 40% mede")
 
 
 class RiskBand(Model):
@@ -189,11 +216,21 @@ class RiskBand(Model):
     proposed_result: Money
 
 
+class StepImpact(Model):
+    step: str = Field(examples=["Sinais de aperto na conta"])
+    denied_new_orders: int = Field(description="Pedidos novos negados neste passo")
+    historical_gain_if_removed: Money = Field(
+        description="Quanto o resultado no histórico muda se o passo for desligado (negativo = o passo ajuda)"
+    )
+    new_orders_gain_if_removed: Money = Field(description="Mesma medida, estimada nos pedidos novos")
+
+
 class SimulationResult(Model):
     params: PolicyParams
     historical: HistoricalResult
     new_orders: NewOrdersResult
     by_risk_band: list[RiskBand]
+    steps_impact: list[StepImpact] = Field(default_factory=list)
 
 
 # --- orders ---------------------------------------------------------------------------

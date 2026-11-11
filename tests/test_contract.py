@@ -11,14 +11,18 @@ from src.schemas import OrderDetail, OrderPage, Pattern, Policy, SimulationResul
 
 @pytest.fixture
 def client(tmp_path, monkeypatch):
+    """Contract checks run on the examples: fast, and independent of database and model."""
+    monkeypatch.setenv("ENGINE_MODE", "fixtures")
     monkeypatch.setattr(service, "APPROVED_POLICY", tmp_path / "approved_policy.json")
-    return TestClient(api.app)
+    service.engine.cache_clear()
+    yield TestClient(api.app)
+    service.engine.cache_clear()
 
 
 def test_health_reports_each_section(client):
     body = client.get("/v1/health").json()
     assert body["status"] == "ok"
-    assert set(body["sections"]) == set(service.SECTIONS)
+    assert set(body["sections"]) == set(service.SECTION_NAMES)
 
 
 @pytest.mark.parametrize(
@@ -56,12 +60,13 @@ def test_invalid_params_return_error_envelope(client):
 
 
 def test_approve_changes_policy_in_force(client):
-    params = {"max_restrictions": 1, "risk_cutoff": 0.15}
+    params = {"max_restrictions": 1, "risk_cutoff": 0.15, "risk_cutoff_expansion": 0.10}
     approved = client.post("/v1/policy/approve", json={"params": params, "approved_by": "Analista"}).json()
     current = client.get("/v1/policy").json()
     assert current["version"] == approved["version"] == 2
     assert current["params"]["risk_cutoff"] == 0.15
-    assert "15%" in current["steps"][1]["rule_text"]
+    risk_step = next(step for step in current["steps"] if step["kind"] == "risk")
+    assert "15%" in risk_step["rule_text"]
 
 
 def test_order_filters_and_detail(client):

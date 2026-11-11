@@ -14,3 +14,7 @@ artifacts/
 .idea/
 
 output/
+
+# derived data from analysis scripts (never commit data)
+analysis/**/*.parquet
+analysis/**/*.csv

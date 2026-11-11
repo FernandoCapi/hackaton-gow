@@ -28,13 +28,15 @@ Documentação interativa com o motor no ar: <http://localhost:8000/docs>.
 
 ## Dados de exemplo × motor real
 
-Enquanto o motor é construído, cada rota responde com exemplos inventados (pedidos
-`P-99001` a `P-99006`). `GET /v1/health` diz a origem de cada seção:
-`"sections": { "orders": "fixtures" | "live", ... }`. Mostre uma faixa "dados de exemplo"
-enquanto `mode` for `"fixtures"`. Quando uma seção vira `live`, o formato não muda.
+Com o banco restaurado e o modelo treinado (`python -m src.risk_model`), as rotas respondem
+com o **motor real** (pedidos `P-xxxxx` de verdade). Sem isso, respondem com exemplos
+inventados (pedidos `P-99001` a `P-99006`); `ENGINE_MODE=fixtures` força os exemplos.
+`GET /v1/health` diz a origem de cada seção: `"sections": { "orders": "fixtures" | "live", ... }`.
+Hoje só `patterns` continua em exemplo. Quando uma seção vira `live`, o formato não muda.
 
-Em modo de exemplo, `POST /v1/simulate` só escala os números para os controles reagirem;
-os valores não são uma simulação real.
+A primeira chamada ao motor real leva ~2 s (carrega dados e modelo); depois, `/simulate`
+responde em ~0,35 s. Em modo de exemplo, `/simulate` só escala os números para os controles
+reagirem.
 
 ## Tela → rota
 
@@ -103,13 +105,43 @@ Tudo de `OrderSummary` mais: `employment_type`, `income_declared`, `installment`
 ### `POST /v1/simulate`
 
 ```json
-{ "params": { "risk_cutoff": 0.15, "max_restrictions": 0 } }
+{ "params": { "risk_cutoff": 0.15, "max_commitment": 0.25 } }
 ```
 
-Campos omitidos usam o padrão. A resposta repete `params` e traz `historical` (resultado
-em R$ no histórico: atual × proposto, ganho, calotes evitados, bons clientes ganhos),
-`new_orders` (aprovados, negados, valor total, quantos mudam em relação à política atual)
-e `by_risk_band[]`. Exemplo em `contracts/fixtures/simulation.json`.
+Campos omitidos usam o padrão. A resposta repete `params` e traz:
+
+- `historical`: resultado em R$ com o desfecho real dos contratos maduros (atual × proposta,
+  ganho, calotes evitados, bons clientes ganhos);
+- `new_orders`: aprovados, negados, volume, quantos mudam em relação à atual e
+  `expected_result` / `current_expected_result` / `expected_gain` (estimativa da nota de 40%);
+- `by_risk_band[]`: gráfico de resultado por faixa de risco;
+- `steps_impact[]`: por passo da política, quantos pedidos novos ele nega e quanto o resultado
+  mudaria sem ele (negativo = o passo protege dinheiro).
+
+### Parâmetros da política (`PolicyParams`)
+
+Todos opcionais; `GET /v1/policy` → `param_specs[]` traz rótulo, faixa, passo e unidade de cada um.
+
+| Passo | Campo | Padrão | O que faz |
+|---|---|---|---|
+| 1 | `min_score` | 450 | Nega score até este valor (o piloto só testou acima) |
+| 1 | `min_income` | 1500 | Nega renda declarada até este valor |
+| 1 | `max_restrictions` | 0 | Nega acima deste número de restrições |
+| 2 | `max_outflow_ratio` | 0.90 | Nega se as saídas passam desta fração das entradas |
+| 2 | `max_recent_overdraft_months` | 1 | Nega acima deste nº de meses com cheque especial nos 3 antes do pedido |
+| 2 | `max_drain` | 3.0 | Nega se a maior saída recente passa X vezes a típica |
+| 2 | `min_inflow_ratio` | 0.60 | Nega se as entradas cobrem menos que isto da renda declarada |
+| 2 | `max_inquiries_90d` | 7 | Nega acima deste nº de consultas ao CPF em 90 dias |
+| 3 | `max_commitment` | 0.25 | Parcela máxima sobre a renda efetiva |
+| 3 | `amount_rule` | `full_or_deny` | `full_or_deny` ou `maximize_expected_profit` (reduz o valor) |
+| 4 | `risk_cutoff` | 0.15 | Risco máximo para quem a atual aprovaria |
+| 4 | `risk_cutoff_expansion` | 0.12 | Risco máximo para quem a atual negaria |
+| 4 | `safety_margin` | 0 | Resultado esperado mínimo por real |
+| 4 | `late_rate` | 0.20 | Chance de atraso usada na conta |
+| 5 | `min_amount` | 500 | Valor mínimo |
+
+`PolicyStep.kind` agora inclui `capacity`. Os passos dos pedidos (`DecisionStep.title`) usam os
+mesmos nomes dos passos da política.
 
 ### `POST /v1/policy/approve`
 

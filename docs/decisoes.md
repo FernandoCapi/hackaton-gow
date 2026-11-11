@@ -14,6 +14,12 @@ dados, time). Alimenta a "defesa das escolhas" e o "que mudou depois do checkpoi
 | 11/11 manhã | Inadimplência só pode ser medida em safras maduras (cai de ~15% em 2024 para 0% em 2026T3 por falta de tempo) | Contratos recentes ainda não tiveram tempo de chegar a 90 dias de atraso | Dados |
 | 11/11 manhã | Candidato a corte de safra madura: ≥ 10 meses desde o pedido (calote: 0% em 0–3 meses, 4% em 4–6, 8,5% em 7–9, ~12–15% a partir de 10) | É onde a taxa de calote para de subir; abaixo disso, "em dia" ainda não quer dizer bom pagador | Dados |
 | 11/11 manhã | Bureau dos 2.000 novos obtido: 119 respostas 503 recuperadas com nova tentativa, 0 faltando | Lote completo em ~1 min; segunda execução não chama a API | Dados |
+| 11/11 manhã | Modelo treinado com contratos de **≥ 12 meses** (2.832); só calote, atraso como taxa fixa de 20% | Calote estabiliza perto de 18 meses; atraso não é previsível (AUC 0,51) | Dados (auditoria) |
+| 11/11 manhã | Restrição monotônica: o risco só sobe com o peso da parcela | Garante que valor menor nunca piore o risco e deixa a regra explicável | Time |
+| 11/11 manhã | **Restrição ativa: nega** (padrão `max_restrictions = 0`) | Nenhum contrato com 12 meses tem restrição (o piloto é mais novo): o modelo não aprendeu esse risco; no piloto deu 19–23% de calote | Dados |
+| 11/11 manhã | Fora do que o piloto testou (score ≤ 450, renda ≤ 1.500) **nega** | Sem evidência; o modelo aprovaria mais (+R$ 72 mil estimado), mas seria extrapolação | Dados |
+| 11/11 manhã | Regra de valor padrão: **valor pedido ou nega** | No histórico rende mais (+R$ 1,11 mi × +R$ 0,80 mi reduzindo); redução profunda não tem dados | Dados (avaliação) |
+| 11/11 manhã | Cortes de risco 15% (quem a atual aprovaria) e 12% (quem ela negaria) | Ganho no histórico estável entre 12% e 17%; no piloto, os aprovados pela expansão tiveram 3,9% de calote | Dados (avaliação) |
 
 ## Perguntas para o cliente (janela de dúvidas)
 
