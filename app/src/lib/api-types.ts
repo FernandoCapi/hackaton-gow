@@ -632,6 +632,12 @@ export interface components {
              * @enum {string}
              */
             kind: "filter" | "capacity" | "risk" | "amount" | "limit";
+            /**
+             * Outcome
+             * @description O que o passo decide: aprova, nega ou define o valor
+             * @enum {string}
+             */
+            outcome: "approve" | "deny" | "amount";
             /** Title */
             title: string;
             /** Rule Text */
