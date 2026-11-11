@@ -13,6 +13,7 @@ from functools import lru_cache
 import pandas as pd
 
 import config
+from src.policy import STEP_CAPACITY, STEP_DOMAIN, STEP_LIMITS, STEP_RISK, STEP_STRAIN, step_title
 from src.schemas import (
     AccountInfo,
     ApproveRequest,
@@ -227,12 +228,16 @@ def policy_steps(p: PolicyParams) -> list[PolicyStep]:
              "resultado esperado."
     )
     margin = f" Também nega se o resultado esperado ficar abaixo de {_pct(p.safety_margin)} do valor." if p.safety_margin else ""
+    restrictions = (
+        "sem restrição ativa" if p.max_restrictions == 0
+        else f"no máximo {p.max_restrictions} {'restrição ativa' if p.max_restrictions == 1 else 'restrições ativas'}"
+    )
     return [
-        PolicyStep(order=1, kind="filter", outcome="approve", title="Quem pode ser aprovado",
+        PolicyStep(order=1, kind="filter", outcome="approve", title=step_title(STEP_DOMAIN, p),
                    rule_text=f"Segue para aprovação quem tem consulta ao bureau, score acima de {p.min_score}, renda acima "
-                             f"de {_brl(p.min_income)} e no máximo {p.max_restrictions} restrições ativas: o perfil que o "
+                             f"de {_brl(p.min_income)} e {restrictions}: o perfil que o "
                              f"piloto testou. O score não é usado como corte de risco."),
-        PolicyStep(order=2, kind="filter", outcome="deny", title="Nega com sinais de aperto na conta",
+        PolicyStep(order=2, kind="filter", outcome="deny", title=step_title(STEP_STRAIN, p),
                    rule_text=f"Basta um destes para negar:\n"
                              f"• saídas acima de {_pct(p.max_outflow_ratio)} das entradas\n"
                              f"• cheque especial em mais de {p.max_recent_overdraft_months} dos 3 meses antes do pedido\n"
@@ -240,14 +245,14 @@ def policy_steps(p: PolicyParams) -> list[PolicyStep]:
                              f"• entradas abaixo de {_pct(p.min_inflow_ratio)} da renda declarada\n"
                              f"• mais de {p.max_inquiries_90d} consultas ao CPF em 90 dias"),
         PolicyStep(order=3, kind="capacity", outcome="deny" if full_or_deny else "amount",
-                   title="Nega quando a parcela não cabe" if full_or_deny else "Ajusta o valor à capacidade",
+                   title=step_title(STEP_CAPACITY, p),
                    rule_text=f"A parcela pode consumir até {_pct(p.max_commitment)} da renda efetiva (a menor entre a "
                              f"renda declarada e a média de entradas na conta). {capacity_text}"),
-        PolicyStep(order=4, kind="risk", outcome="deny", title="Nega pelo risco estimado pela IA",
+        PolicyStep(order=4, kind="risk", outcome="deny", title=step_title(STEP_RISK, p),
                    rule_text=f"Um modelo treinado no histórico estima a chance de calote no valor a aprovar. Nega acima "
                              f"de {_pct(p.risk_cutoff)} para quem a política atual aprovaria e acima de "
                              f"{_pct(p.risk_cutoff_expansion)} para quem ela negaria.{margin}"),
-        PolicyStep(order=5, kind="limit", outcome="amount", title="Valor aprovado",
+        PolicyStep(order=5, kind="limit", outcome="amount", title=step_title(STEP_LIMITS, p),
                    rule_text=f"Quem passou por tudo recebe {'o valor pedido' if full_or_deny else 'o valor do passo 3'}, "
                              f"até R$ 30.000. Abaixo de "
                              f"{_brl(p.min_amount)}, nega."),

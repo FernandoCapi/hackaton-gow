@@ -108,8 +108,10 @@ def _movement() -> pd.DataFrame:
     out["cheque_recente_meses"] = out["cheque_recente_meses"].fillna(0).astype(int)
     # Shown to the analyst only (not model features).
     out["salario_media"] = g.entradas_salario.mean()
-    out["saldo_minimo"] = g.saldo_minimo.min()
+    # The oldest month carries the overdraft artifact (negative balance included), so both the
+    # minimum balance and the overdraft days skip it: saldo < 0 <=> overdraft days > 0.
     real_months = mov[~(mov.is_oldest & (mov.months > 1))]
+    out["saldo_minimo"] = real_months.groupby("id_cliente").saldo_minimo.min()
     out["dias_cheque_12m"] = real_months.groupby("id_cliente").dias_cheque_especial.sum()
     out["dias_cheque_12m"] = out["dias_cheque_12m"].fillna(0).astype(int)
 

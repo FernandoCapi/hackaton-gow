@@ -167,7 +167,10 @@ def main():
     print(f"Arquivo: {path.relative_to(config.ROOT)} | {len(decisions)} pedidos | "
           f"{int(approved.sum())} aprovados (R$ {decisions.approved_amount.sum():,.2f}) | "
           f"{int((~approved).sum())} negados | {int(decisions.changed_vs_current.sum())} diferentes da política atual")
-    print(f"Negados por passo: {decisions[~approved].denied_at.value_counts().to_dict()}")
+    from src.policy import step_title
+
+    by_step = decisions[~approved].denied_at.value_counts()
+    print("Negados por passo: " + "; ".join(f"{step_title(step, params)}: {count}" for step, count in by_step.items()))
     if no_bureau:
         print(f"Aviso: {no_bureau} pedidos negados por bureau indisponível")
     if problems:

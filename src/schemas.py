@@ -209,7 +209,10 @@ class HistoricalResult(Model):
     approved_current: int
     approved_proposed: int
     defaults_avoided: int = Field(description="Calotes que a política atual aprovou e a proposta nega")
-    good_customers_gained: int = Field(description="Bons pagadores que a atual negaria e a proposta aprova")
+    good_customers_gained: int = Field(
+        description="No piloto (única evidência sobre quem a atual nega): clientes que a atual negaria, a proposta "
+        "aprova e que não deram calote até agora (contratos de 6 a 12 meses, calote ainda parcial)"
+    )
 
 
 class NewOrdersResult(Model):
