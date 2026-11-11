@@ -128,3 +128,39 @@ body {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
+
+/* Coin loader (CoinLoader in components/ui.tsx) */
+.coin-spin {
+  animation: coin-spin 1.4s ease-in-out infinite;
+  transform-origin: center;
+}
+.coin-shadow {
+  position: relative;
+  display: inline-block;
+  padding-bottom: 6px;
+}
+.coin-shadow::after {
+  content: "";
+  position: absolute;
+  left: 15%;
+  right: 15%;
+  bottom: 0;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--foreground);
+  opacity: 0.15;
+  animation: coin-shadow 1.4s ease-in-out infinite;
+}
+@keyframes coin-spin {
+  0%, 100% { transform: scaleX(1); filter: brightness(1); }
+  25% { transform: scaleX(0.08); filter: brightness(0.75); }
+  50% { transform: scaleX(1); filter: brightness(1.08); }
+  75% { transform: scaleX(0.08); filter: brightness(0.75); }
+}
+@keyframes coin-shadow {
+  0%, 50%, 100% { transform: scaleX(1); }
+  25%, 75% { transform: scaleX(0.35); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .coin-spin, .coin-shadow::after { animation: none; }
+}
