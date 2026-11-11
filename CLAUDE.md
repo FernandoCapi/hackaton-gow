@@ -5,14 +5,27 @@ banco PostgreSQL e a IA precisa encontrar padrões nos dados e apoiar uma decis�
 
 ## Desafio
 
-**Pendente — revelado às 8h.** Depois do kickoff, rode `/kickoff` com o briefing: ele grava
-`docs/desafio.md` e substitui esta seção por decisão, métrica, entrega e restrições.
+**Fortuna Crédito** (time **selic**). Regras completas em `docs/desafio.md`, decisões em
+`docs/decisoes.md`, plano em `docs/plano.md`.
+
+- **Decisão:** para cada um dos 2.000 pedidos novos, aprovar ou negar e com qual valor
+  (≤ solicitado, ≤ R$ 30 mil, ≥ R$ 500). A IA sugere, o analista de risco decide.
+- **Referência:** política atual — score > 600, renda > R$ 2.000, 0 restrições, parcela
+  (Price, 3% a.m.) ≤ 30% da renda; acima disso reduz o valor ao que cabe.
+- **Métrica (40%):** por aprovado, +15% do valor se paga em dia, +5% com atraso, −60% se não
+  paga; ganho = nosso resultado − política atual. Sem atraso, só compensa aprovar com
+  chance de calote < 20%. O desfecho piora quando o valor aprovado é alto demais.
+- **Entrega:** `selic_final.csv` (`id_pedido,decisao,valor_aprovado`, gerado por código) até
+  15h30 no Teams; painel (padrões + política em passos); pitch de 5 min; código com README.
+- **Banca (60%):** padrões descobertos pela IA 25%, pitch 15%, painel 10%, qualidade técnica
+  10% (inclui tratar as falhas do bureau).
+- **Restrições:** IA precisa participar da descoberta e da decisão; sem dados externos;
+  bureau dos novos só pela API (token no `.env`).
 
 ## Como a nota é formada
 
-- Uma parte objetiva, em números (métrica a confirmar no kickoff).
-- Uma parte da banca, no pitch: entendimento do problema, explicação em linguagem simples do
-  que a IA descobriu, painel que o cliente usaria para decidir, defesa das escolhas.
+- 40% objetivo: ganho em reais sobre a política atual, calculado do arquivo de decisões.
+- 60% banca: padrões explicados corretamente, pitch, painel para o analista, qualidade técnica.
 
 Na dúvida entre duas tarefas, priorize a que move uma dessas duas partes.
 
@@ -29,7 +42,8 @@ Na dúvida entre duas tarefas, priorize a que move uma dessas duas partes.
 
 ```
 docker compose up -d --wait                  # Postgres em localhost:5432 (hackaton/hackaton)
-python scripts/restore_db.py dumps/<arquivo> # restaura o banco do desafio (recria o banco)
+python scripts/restore_db.py <dump> --db fortuna  # restaura o desafio no banco fortuna
+python -m src.bureau                         # bureau dos pedidos novos -> data/ (re-rodar até 0 faltando)
 python -m src.profile --save                 # perfil do schema em docs/perfil-banco.md
 python -m src.train                          # modelo baseline + artifacts/
 python -m src.explain                        # explicação via API (ANTHROPIC_API_KEY); sem chave, gera o prompt para /explicar

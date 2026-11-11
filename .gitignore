@@ -12,3 +12,5 @@ artifacts/
 .streamlit/secrets.toml
 .vscode/
 .idea/
+
+output/
