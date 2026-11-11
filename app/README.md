@@ -27,7 +27,8 @@ O próprio motor decide a origem dos dados (`GET /v1/health` → `sections`):
   Basta `pip install -r requirements.txt`; não precisa de banco.
 
 O painel avisa quais seções ainda estão com dados de exemplo. O botão do `selic_final.csv`
-só libera quando `decisions_csv` está ao vivo.
+(em Pedidos) só libera quando `decisions_csv` está ao vivo; o arquivo também sai do código
+(`python -m src.decide`).
 
 ## Contrato
 
@@ -44,6 +45,5 @@ npx openapi-typescript ../contracts/openapi.json -o src/lib/api-types.ts
 | `src/lib/api-types.ts` | Tipos gerados do contrato (não editar à mão) |
 | `src/lib/api.ts` | Cliente da API e erros `{ error: { code, message } }` |
 | `src/lib/format.ts` | R$, %, datas em pt-BR |
-| `src/lib/health.ts` | Aviso de seções ainda com dados de exemplo |
-| `src/app/` | Páginas: visão geral, padrões, política, laboratório, pedidos |
+| `src/app/` | Páginas: visão geral, padrões, política, laboratório, pedidos (lista e detalhe) |
 | `src/components/` | Menu lateral, seções e peças de tela |

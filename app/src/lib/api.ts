@@ -65,5 +65,4 @@ export const api = {
     request<Policy>("policy/approve", post({ params, approved_by, note })),
   orders: (query: OrderQuery) => request<OrderPage>(`orders${queryString(query)}`),
   order: (id: string) => request<OrderDetail>(`orders/${encodeURIComponent(id)}`),
-  decisionsCsvUrl: "/api/decisions.csv",
 };
