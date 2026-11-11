@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { api } from "@/lib/api";
 import OrderSearch from "./OrderSearch";
+import ThemeToggle from "./ThemeToggle";
 
 const SECTIONS = [
   { href: "/", label: "Visão geral" },
@@ -41,9 +42,12 @@ export default function Sidebar() {
 
   return (
     <aside className="border-b border-border bg-surface md:sticky md:top-0 md:flex md:h-screen md:w-64 md:shrink-0 md:flex-col md:border-r md:border-b-0">
-      <div className="px-4 pt-4 pb-3 md:px-5 md:pt-6">
-        <Link href="/" className="text-base font-semibold tracking-tight">Fortuna Crédito</Link>
-        <p className="text-xs text-muted">Painel do analista de risco</p>
+      <div className="flex items-start justify-between gap-2 px-4 pt-4 pb-3 md:px-5 md:pt-6">
+        <div>
+          <Link href="/" className="text-base font-semibold tracking-tight">Fortuna Crédito</Link>
+          <p className="text-xs text-muted">Painel do analista de risco</p>
+        </div>
+        <ThemeToggle />
       </div>
       <div className="px-4 pb-3 md:px-5 md:pb-5"><OrderSearch /></div>
 

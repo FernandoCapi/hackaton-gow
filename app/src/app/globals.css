@@ -14,6 +14,7 @@
   --accent-soft: #e8f0fa;
   --warning-bg: #fff4d6;
   --warning-fg: #6b4e00;
+  color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -31,7 +32,26 @@
     --accent-soft: #1d2a3a;
     --warning-bg: #3a2f10;
     --warning-fg: #f3d27a;
+    color-scheme: dark;
   }
+}
+
+/* Manual choice from the theme button; keep in sync with the block above. */
+:root[data-theme="dark"] {
+  --background: #121211;
+  --surface: #1a1a19;
+  --foreground: #f0efec;
+  --muted: #a8a79e;
+  --border: #2f2f2c;
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --good: #4cba6e;
+  --critical: #ef6b6b;
+  --accent: #3987e5;
+  --accent-soft: #1d2a3a;
+  --warning-bg: #3a2f10;
+  --warning-fg: #f3d27a;
+  color-scheme: dark;
 }
 
 @theme inline {
