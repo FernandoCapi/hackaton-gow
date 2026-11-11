@@ -39,7 +39,7 @@ function PatternChart({ pattern }: { pattern: Pattern }) {
 export default function Patterns() {
   const { data, isLoading, error } = useQuery({ queryKey: ["patterns"], queryFn: api.patterns });
   return (
-    <Section title="Padrões encontrados pela IA" subtitle="Grupos de clientes que pagam pior ou melhor que a média, no histórico de contratos encerrados.">
+    <Section title="Padrões encontrados" subtitle="Grupos de clientes que pagam pior ou melhor que a média, no histórico de contratos encerrados.">
       <Status loading={isLoading} error={error} />
       <div className="grid gap-4 lg:grid-cols-2">
         {data?.map((pattern) => (

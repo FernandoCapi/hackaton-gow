@@ -8,7 +8,7 @@ import { Section, Stat, Status } from "./ui";
 export default function Overview() {
   const { data, isLoading, error } = useQuery({ queryKey: ["summary"], queryFn: api.summary });
   return (
-    <Section title="Visão geral" subtitle="Os 2.000 pedidos novos: política proposta pela IA × regra antiga (score > 600, renda > R$ 2.000, sem restrições).">
+    <Section title="Visão geral" subtitle="Os 2.000 pedidos novos: política proposta × regra antiga (score > 600, renda > R$ 2.000, sem restrições).">
       <Status loading={isLoading} error={error} />
       {data && (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">

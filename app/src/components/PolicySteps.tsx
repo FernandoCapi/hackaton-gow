@@ -21,7 +21,7 @@ export default function PolicySteps() {
         <>
           <p className="mb-3 text-sm text-muted">
             Versão {data.version} ·{" "}
-            {approvedAt ? `aprovada por ${data.approved_by} em ${approvedAt}` : "proposta da IA, ainda não aprovada pelo analista"}
+            {approvedAt ? `aprovada por ${data.approved_by} em ${approvedAt}` : "proposta, ainda não aprovada pelo analista"}
             {data.note && ` · ${data.note}`}
           </p>
           <ol className="grid gap-3 md:grid-cols-2">
