@@ -314,6 +314,21 @@ export interface components {
             current_approved: number;
             /** Changed Vs Current */
             changed_vs_current: number;
+            /**
+             * Expected Result
+             * @description Resultado esperado pelo modelo, política proposta
+             */
+            expected_result?: number | null;
+            /**
+             * Current Expected Result
+             * @description Resultado esperado pelo modelo, política atual
+             */
+            current_expected_result?: number | null;
+            /**
+             * Expected Gain
+             * @description Estimativa do ganho que a nota de 40% mede
+             */
+            expected_gain?: number | null;
         };
         /** OrderDetail */
         OrderDetail: {
@@ -513,32 +528,95 @@ export interface components {
             /** Param Specs */
             param_specs: components["schemas"]["ParamSpec"][];
         };
-        /** PolicyParams */
+        /**
+         * PolicyParams
+         * @description Every number of the proposed policy. Omitted fields take the default.
+         */
         PolicyParams: {
             /**
+             * Min Score
+             * @description Nega com score do bureau até este valor
+             * @default 450
+             */
+            min_score: number;
+            /**
+             * Min Income
+             * @description Nega com renda declarada até este valor
+             * @default 1500
+             */
+            min_income: number;
+            /**
              * Max Restrictions
-             * @description Nega acima deste número de restrições
+             * @description Nega acima deste número de restrições (1 restrição: 19–23% de calote no piloto; o modelo não as viu)
              * @default 0
              */
             max_restrictions: number;
             /**
+             * Max Outflow Ratio
+             * @description Nega se as saídas passam desta fração das entradas
+             * @default 0.9
+             */
+            max_outflow_ratio: number;
+            /**
+             * Max Recent Overdraft Months
+             * @description Nega acima deste número de meses com cheque especial nos 3 antes do pedido
+             * @default 1
+             */
+            max_recent_overdraft_months: number;
+            /**
+             * Max Drain
+             * @description Nega se a maior saída recente passa X vezes a saída típica
+             * @default 3
+             */
+            max_drain: number;
+            /**
+             * Min Inflow Ratio
+             * @description Nega se as entradas cobrem menos que isto da renda declarada
+             * @default 0.6
+             */
+            min_inflow_ratio: number;
+            /**
+             * Max Inquiries 90D
+             * @description Nega acima deste número de consultas ao CPF em 90 dias
+             * @default 7
+             */
+            max_inquiries_90d: number;
+            /**
+             * Max Commitment
+             * @description Parcela máxima sobre a renda efetiva
+             * @default 0.25
+             */
+            max_commitment: number;
+            /**
+             * Amount Rule
+             * @default full_or_deny
+             * @enum {string}
+             */
+            amount_rule: "full_or_deny" | "maximize_expected_profit";
+            /**
              * Risk Cutoff
-             * @description Nega com chance de calote acima disto
-             * @default 0.2
+             * @description Nega com chance de calote acima disto (quem a política atual aprovaria)
+             * @default 0.15
              */
             risk_cutoff: number;
             /**
+             * Risk Cutoff Expansion
+             * @description Mesmo corte para quem a política atual negaria (evidência só do piloto)
+             * @default 0.12
+             */
+            risk_cutoff_expansion: number;
+            /**
              * Safety Margin
-             * @description Margem sobre o ponto de equilíbrio
+             * @description Resultado esperado mínimo por real emprestado
              * @default 0
              */
             safety_margin: number;
             /**
-             * Amount Rule
-             * @default maximize_expected_profit
-             * @enum {string}
+             * Late Rate
+             * @description Chance de atraso usada na conta (não é previsível nos dados)
+             * @default 0.2
              */
-            amount_rule: "maximize_expected_profit" | "fixed_bands";
+            late_rate: number;
             /**
              * Min Amount
              * @default 500
@@ -553,7 +631,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "filter" | "risk" | "amount" | "limit";
+            kind: "filter" | "capacity" | "risk" | "amount" | "limit";
             /** Title */
             title: string;
             /** Rule Text */
@@ -600,6 +678,31 @@ export interface components {
             new_orders: components["schemas"]["NewOrdersResult"];
             /** By Risk Band */
             by_risk_band: components["schemas"]["RiskBand"][];
+            /** Steps Impact */
+            steps_impact?: components["schemas"]["StepImpact"][];
+        };
+        /** StepImpact */
+        StepImpact: {
+            /**
+             * Step
+             * @example Sinais de aperto na conta
+             */
+            step: string;
+            /**
+             * Denied New Orders
+             * @description Pedidos novos negados neste passo
+             */
+            denied_new_orders: number;
+            /**
+             * Historical Gain If Removed
+             * @description Quanto o resultado no histórico muda se o passo for desligado (negativo = o passo ajuda)
+             */
+            historical_gain_if_removed: number;
+            /**
+             * New Orders Gain If Removed
+             * @description Mesma medida, estimada nos pedidos novos
+             */
+            new_orders_gain_if_removed: number;
         };
         /** Summary */
         Summary: {

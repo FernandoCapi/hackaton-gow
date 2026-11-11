@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { api } from "@/lib/api";
+import { exampleDataWarning } from "@/lib/health";
 import OrderSearch from "./OrderSearch";
 
 // The analyst's journey, in the order it is meant to be followed.
@@ -95,10 +96,8 @@ export default function Sidebar() {
       <div className="hidden px-5 py-4 text-xs md:block">
         {health.error ? (
           <p role="alert" className="rounded-md bg-critical/10 p-2 text-critical">{health.error.message}</p>
-        ) : health.data?.mode === "fixtures" ? (
-          <p role="status" className="rounded-md bg-warning-bg p-2 text-warning-fg">
-            Dados de exemplo: os números ainda não vêm do motor de decisão.
-          </p>
+        ) : exampleDataWarning(health.data) ? (
+          <p role="status" className="rounded-md bg-warning-bg p-2 text-warning-fg">{exampleDataWarning(health.data)}</p>
         ) : null}
         <p className="mt-3 text-muted">A IA sugere, o analista de risco decide.</p>
       </div>

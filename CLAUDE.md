@@ -71,7 +71,7 @@ Use o Python da `.venv` (`.venv\Scripts\python.exe` no Windows, `.venv/bin/pytho
   motor real assumir cada seção). Guia para o front: `docs/api.md`.
 - `contracts/` — `openapi.json` (gera os tipos TypeScript do front) e `fixtures/` (exemplos
   inventados, sem dados do banco).
-- `app/` — painel em Next (front), consome a API por `/api/*`: mock dos fixtures sem `API_URL`, proxy para `API_URL/v1/*` com ela. Guia em `app/README.md`.
+- `app/` — painel em Next (front), consome a API por proxy `/api/*` → `API_URL/v1/*` (padrão `localhost:8000`). Guia em `app/README.md`.
 - `src/bureau.py` — bureau dos pedidos novos com novas tentativas e cache em `data/`.
 - Motor: `src/features.py` (variáveis do dia do pedido, lista fechada) → `src/risk_model.py`
   (LightGBM de calote) → `src/policy.py` (política atual e proposta em 5 passos) →

@@ -23,8 +23,8 @@ Documentação interativa com o motor no ar: <http://localhost:8000/docs>.
    ```
    Uso: `import type { components } from '@/lib/api-types'` e
    `type OrderDetail = components['schemas']['OrderDetail']`.
-4. **Sem Python?** As respostas de exemplo estão em `contracts/fixtures/*.json` e podem ser
-   servidas por rotas mock do próprio Next até o motor estar disponível.
+4. **Sem banco ou modelo?** O motor responde sozinho com `contracts/fixtures/` (ou force com
+   `ENGINE_MODE=fixtures`); basta `pip install -r requirements.txt`. Não há mock no Next.
 
 ## Dados de exemplo × motor real
 

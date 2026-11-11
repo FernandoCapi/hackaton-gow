@@ -40,5 +40,3 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# mock state (approved policy while running without the engine)
-.mock-approved-policy.json

@@ -1,13 +1,13 @@
 import type { NextConfig } from "next";
 
-// Without API_URL the front uses the mock in src/app/api (contracts/fixtures).
-// With API_URL (e.g. http://localhost:8000) /api/* goes to the engine's /v1/*; beforeFiles wins over the mock route.
-const apiUrl = process.env.API_URL;
+// /api/* goes to the decision engine's /v1/*. Without the trained model the engine itself
+// answers with contracts/fixtures (ENGINE_MODE=fixtures forces it), so there is no mock here.
+const apiUrl = process.env.API_URL ?? "http://localhost:8000";
 
 const nextConfig: NextConfig = {
   devIndicators: false,
   async rewrites() {
-    return apiUrl ? { beforeFiles: [{ source: "/api/:path*", destination: `${apiUrl}/v1/:path*` }], afterFiles: [], fallback: [] } : [];
+    return [{ source: "/api/:path*", destination: `${apiUrl}/v1/:path*` }];
   },
 };
 
