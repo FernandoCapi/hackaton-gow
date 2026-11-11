@@ -1205,6 +1205,75 @@
             "type": "array",
             "title": "Groups",
             "description": "Barras do gráfico, já agregadas"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "risk",
+                  "opportunity",
+                  "trap"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind",
+            "description": "risk: a atual aprova e perde; opportunity: a atual nega quem pagaria; trap: parece perigoso, mas não é"
+          },
+          "new_orders_affected": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "New Orders Affected",
+            "description": "Quantos dos 2.000 pedidos novos caem no grupo"
+          },
+          "policy_step": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Policy Step",
+            "description": "Passo da política proposta que usa este padrão"
+          },
+          "evidence": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "historico_maduro",
+                  "piloto"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence",
+            "description": "historico_maduro: contratos com 12+ meses; piloto: sorteado, calote ainda parcial"
+          },
+          "caveat": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Caveat",
+            "description": "Ressalva para o analista (amostra pequena, base de comparação)"
           }
         },
         "additionalProperties": false,
