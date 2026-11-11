@@ -36,3 +36,13 @@ ENTITY_LABEL = "cliente"
 POSITIVE_LABEL = "cancelamento"
 
 ARTIFACTS = ROOT / "artifacts"
+DATA = ROOT / "data"
+OUTPUT = ROOT / "output"
+
+# Team identifier: names the final decisions file (<TEAM_ID>_final.csv).
+TEAM_ID = os.getenv("TEAM_ID", "selic")
+
+# Credit bureau API for the new orders (historical bureau data comes in the dump).
+BUREAU_URL = os.getenv("BUREAU_URL", "").rstrip("/")
+BUREAU_TOKEN = os.getenv("BUREAU_TOKEN", "")
+BUREAU_CACHE = DATA / "bureau_novos.csv"
