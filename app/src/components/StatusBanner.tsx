@@ -1,0 +1,17 @@
+"use client";
+
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/lib/api";
+
+export default function StatusBanner() {
+  const { data, error } = useQuery({ queryKey: ["health"], queryFn: api.health });
+  if (error) {
+    return <p role="alert" className="bg-critical px-4 py-2 text-center text-sm text-white">{error.message}</p>;
+  }
+  if (data?.mode !== "fixtures") return null;
+  return (
+    <p role="status" className="bg-warning-bg px-4 py-2 text-center text-sm text-warning-fg">
+      Dados de exemplo: os números ainda não vêm do motor de decisão.
+    </p>
+  );
+}
